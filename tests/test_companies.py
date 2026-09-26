@@ -103,15 +103,8 @@ def test_find_towns():
 def test_companies_on_the_radar(conn):
     d, _ = directory([httpx.Response(200, json=NEAR)])
     assert db.upsert_companies(conn, d.near(47.75, 7.34, 10)) == 2
-    assert (
-        db.upsert_companies(
-            conn,
-            CompanyDirectory(api=directory([httpx.Response(200, json=NEAR)])[0].api).near(
-                47.75, 7.34, 10
-            ),
-        )
-        == 2
-    )  # idempotent
+    again, _ = directory([httpx.Response(200, json=NEAR)])
+    assert db.upsert_companies(conn, again.near(47.75, 7.34, 10)) == 2  # idempotent
 
     around = db.companies_within(conn, 47.7508, 7.3359, 5)
     assert [c.name for c in around] == ["DATA ACME (FICTIVE)", "GRAND GROUPE (FICTIF)"]
