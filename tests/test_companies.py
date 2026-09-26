@@ -7,7 +7,7 @@ import pytest
 from job_radar import db
 from job_radar.http import ApiClient, ApiError
 from job_radar.sources.companies import CompanyDirectory
-from job_radar.sources.geo import find_towns
+from job_radar.sources.geo import Geocoder
 
 NEAR = json.loads((Path(__file__).parent / "fixtures" / "near_point.json").read_text("utf-8"))
 
@@ -96,7 +96,7 @@ def test_find_towns():
             )
         ],
     )
-    (town,) = find_towns("Mulhouse", api=client)
+    (town,) = Geocoder(geo_api=client).search("Mulhouse")
     assert (town.insee_code, town.latitude, town.longitude) == ("68224", 47.7526, 7.3255)
 
 

@@ -107,6 +107,7 @@ def _location(node: dict) -> Location:
         country=_text(address.get("addressCountry")),
         latitude=_float(geo.get("latitude")),
         longitude=_float(geo.get("longitude")),
+        precision="exact" if geo.get("latitude") and geo.get("longitude") else "",
     )
 
 

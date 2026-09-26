@@ -59,19 +59,20 @@ class LoadReport:
 
 _UPSERT = """
 INSERT INTO offers (source, source_id, url, title, company_name, description, kinds,
-                    employment_types, city, postal_code, country, location, remote,
-                    published_at, valid_through, content_hash)
+                    employment_types, city, postal_code, country, location,
+                    location_precision, remote, published_at, valid_through, content_hash)
 VALUES (%(source)s, %(source_id)s, %(url)s, %(title)s, %(company)s, %(description)s,
         %(kinds)s, %(employment_types)s, %(city)s, %(postal_code)s, %(country)s,
         CASE WHEN %(lon)s::float8 IS NULL OR %(lat)s::float8 IS NULL THEN NULL
              ELSE ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography END,
-        %(remote)s, %(published_at)s, %(valid_through)s, %(hash)s)
+        %(precision)s, %(remote)s, %(published_at)s, %(valid_through)s, %(hash)s)
 ON CONFLICT (source, source_id) DO UPDATE SET
     url = EXCLUDED.url, title = EXCLUDED.title, company_name = EXCLUDED.company_name,
     description = EXCLUDED.description, kinds = EXCLUDED.kinds,
     employment_types = EXCLUDED.employment_types, city = EXCLUDED.city,
     postal_code = EXCLUDED.postal_code, country = EXCLUDED.country,
-    location = EXCLUDED.location, remote = EXCLUDED.remote,
+    location = EXCLUDED.location, location_precision = EXCLUDED.location_precision,
+    remote = EXCLUDED.remote,
     published_at = EXCLUDED.published_at, valid_through = EXCLUDED.valid_through,
     content_hash = EXCLUDED.content_hash,
     -- an edited offer loses its embedding: it will be recomputed from the new text
@@ -125,6 +126,7 @@ def upsert_offers(conn: psycopg.Connection, offers: Iterable[Offer]) -> LoadRepo
                 "country": offer.location.country,
                 "lat": offer.location.latitude,
                 "lon": offer.location.longitude,
+                "precision": offer.location.precision if offer.location.has_point else "",
                 "remote": offer.remote,
                 "published_at": offer.published_at,
                 "valid_through": offer.valid_through,
@@ -146,6 +148,7 @@ class RadarOffer:
     kinds: list[str]
     distance_km: float
     published_at: object
+    precision: str
 
 
 def offers_within(
@@ -164,7 +167,8 @@ def offers_within(
         """
         WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p)
         SELECT o.id, o.title, o.company_name, o.url, o.city, o.kinds,
-               ST_Distance(o.location, here.p) / 1000 AS distance_km, o.published_at
+               ST_Distance(o.location, here.p) / 1000 AS distance_km, o.published_at,
+               o.location_precision
         FROM offers o, here
         WHERE ST_DWithin(o.location, here.p, %(radius_m)s)
           AND (%(kinds)s::text[] IS NULL OR o.kinds && %(kinds)s::text[])
@@ -311,3 +315,20 @@ def companies_within(
         },
     ).fetchall()
     return [RadarCompany(*row) for row in rows]
+
+
+def unplaced_offers(conn: psycopg.Connection, limit: int = 1000) -> list[tuple]:
+    """Offers still without a position (geocoding was down or the town was unknown)."""
+    return conn.execute(
+        "SELECT id, city, postal_code, country FROM offers WHERE location IS NULL "
+        "AND (city <> '' OR postal_code <> '') ORDER BY id LIMIT %s",
+        (limit,),
+    ).fetchall()
+
+
+def set_location(conn: psycopg.Connection, offer_id: int, lat: float, lon: float) -> None:
+    conn.execute(
+        "UPDATE offers SET location = ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, "
+        "location_precision = 'town' WHERE id = %s",
+        (lon, lat, offer_id),
+    )

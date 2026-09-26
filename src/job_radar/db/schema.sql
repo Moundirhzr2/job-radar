@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS offers (
     postal_code      text NOT NULL DEFAULT '',
     country          text NOT NULL DEFAULT '',
     location         geography(Point, 4326),
+    location_precision text NOT NULL DEFAULT '',  -- exact | town (centre de la commune)
     remote           boolean,
     published_at     timestamptz,
     valid_through    timestamptz,

@@ -24,6 +24,7 @@ class Location:
     country: str = ""
     latitude: float | None = None
     longitude: float | None = None
+    precision: str = ""  # "exact": coordinates from the source; "town": centre of the town
 
     @property
     def has_point(self) -> bool:

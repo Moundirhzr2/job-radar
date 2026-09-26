@@ -1,0 +1,161 @@
+"""Command line: set the radar on a town and see what is around.
+
+radar companies --town Mulhouse --radius 15 --naf 62,63
+radar careers https://groupeoci.teamtailor.com/jobs
+radar feed recruitee amiparis
+radar offers --town Mulhouse --radius 30 --kind internship apprenticeship
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+
+from dotenv import load_dotenv
+
+from . import db
+from .models import Kind
+from .sources.careers.ats import Board, fetch_board
+from .sources.careers.fetch import PoliteFetcher
+from .sources.careers.site import read_career_site
+from .sources.companies import HEADCOUNT_LABEL, CompanyDirectory
+from .sources.geo import Geocoder, GeocodingUnavailable, find_towns, place
+
+DEFAULT_DATABASE_URL = "postgresql://radar:radar@localhost:5433/radar"
+KIND_LABELS = {
+    "internship": "stage",
+    "apprenticeship": "alternance",
+    "student_job": "job étudiant",
+    "job": "emploi",
+}
+
+
+def _connect():
+    conn = db.connect(os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL))
+    db.init_schema(conn)
+    return conn
+
+
+def _town(name: str):
+    try:
+        towns = find_towns(name, limit=1)
+    except GeocodingUnavailable:
+        sys.exit("Les services de géolocalisation ne répondent pas. Réessayez dans un instant.")
+    if not towns:
+        sys.exit(f"Commune introuvable : {name}")
+    return towns[0]
+
+
+def cmd_companies(args) -> None:
+    town = _town(args.town)
+    directory = CompanyDirectory()
+    conn = _connect()
+    n = db.upsert_companies(
+        conn, directory.near(town.latitude, town.longitude, args.radius, args.sections, args.max)
+    )
+    naf = [p.strip() for p in args.naf.split(",")] if args.naf else None
+    rows = db.companies_within(conn, town.latitude, town.longitude, args.radius, naf)
+    print(f"{n} employeurs lus autour de {town.name} ({args.radius} km), {len(rows)} affichés.\n")
+    for c in rows:
+        size = HEADCOUNT_LABEL.get(c.headcount_range, "effectif inconnu")
+        print(f"{c.distance_km:5.1f} km  {c.name[:50]:50}  {c.naf_code:7} {size:14} {c.city}")
+        for officer in c.officers:
+            print(f"{'':10}dirigeant : {officer}")
+
+
+def _store(offers, label: str) -> None:
+    geocoder = Geocoder()
+    placing = place(offers, geocoder)
+    conn = _connect()
+    report = db.upsert_offers(conn, offers)
+    print(
+        f"{label} : {len(offers)} offres — {report.inserted} nouvelles, "
+        f"{report.updated} modifiées, {report.unchanged} inchangées. "
+        f"{placing.placed} placées au centre de leur commune, "
+        f"{placing.unplaced} hors de France ou lieu inconnu."
+    )
+    retried = _place_pending(conn, geocoder)
+    if placing.unavailable or retried:
+        print(
+            "Géolocalisation indisponible pour certaines offres : nouvel essai au prochain passage."
+        )
+
+
+def _place_pending(conn, geocoder: Geocoder) -> int:
+    """Retry offers saved without a position. Returns how many are still waiting."""
+    waiting = 0
+    for offer_id, city, postal_code, country in db.unplaced_offers(conn):
+        try:
+            town = geocoder.locate(city, postal_code, country)
+        except GeocodingUnavailable:
+            waiting += 1
+            continue
+        if town:
+            db.set_location(conn, offer_id, town.latitude, town.longitude)
+    conn.commit()
+    return waiting
+
+
+def cmd_careers(args) -> None:
+    report = read_career_site(PoliteFetcher(), args.url, max_job_pages=args.max_pages)
+    if report.skipped:
+        print(f"Non lues (interdites par robots.txt) : {len(report.skipped)}")
+    _store(report.offers, args.url)
+
+
+def cmd_feed(args) -> None:
+    fetcher = PoliteFetcher()
+    board = Board(args.provider, args.identifier, args.region)
+    _store(
+        fetch_board(board, lambda url: fetcher.get(url).json()),
+        f"{args.provider}/{args.identifier}",
+    )
+
+
+def cmd_offers(args) -> None:
+    town = _town(args.town)
+    kinds = [Kind(k) for k in args.kind] if args.kind else None
+    rows = db.offers_within(_connect(), town.latitude, town.longitude, args.radius, kinds)
+    print(f"{len(rows)} offres à moins de {args.radius} km de {town.name}.\n")
+    for o in rows:
+        approx = "≈" if o.precision == "town" else " "
+        what = ", ".join(KIND_LABELS[k] for k in o.kinds)
+        print(f"{approx}{o.distance_km:5.1f} km  [{what}] {o.title[:60]}")
+        print(f"{'':10}{o.company or '?'} — {o.city} — {o.url}")
+
+
+def main(argv: list[str] | None = None) -> None:
+    load_dotenv()
+    parser = argparse.ArgumentParser(prog="radar", description=__doc__.split("\n")[0])
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("companies", help="les employeurs autour d'une commune")
+    p.add_argument("--town", required=True)
+    p.add_argument("--radius", type=float, default=10, help="en km (50 au plus)")
+    p.add_argument(
+        "--sections", help="sections d'activité INSEE, ex. J (information-communication)"
+    )
+    p.add_argument("--naf", help="préfixes de code NAF à afficher, ex. 62,63")
+    p.add_argument("--max", type=int, default=300, help="nombre d'entreprises à lire au plus")
+    p.set_defaults(func=cmd_companies)
+
+    p = sub.add_parser("careers", help="lit les offres du site carrières d'une entreprise")
+    p.add_argument("url")
+    p.add_argument("--max-pages", type=int, default=50)
+    p.set_defaults(func=cmd_careers)
+
+    p = sub.add_parser("feed", help="lit le flux public d'un logiciel de recrutement")
+    p.add_argument("provider", choices=["greenhouse", "lever", "recruitee"])
+    p.add_argument("identifier")
+    p.add_argument("--region", default="", choices=["", "eu"])
+    p.set_defaults(func=cmd_feed)
+
+    p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
+    p.add_argument("--town", required=True)
+    p.add_argument("--radius", type=float, default=20)
+    p.add_argument("--kind", nargs="+", choices=[k.value for k in Kind])
+    p.set_defaults(func=cmd_offers)
+
+    args = parser.parse_args(argv)
+    args.func(args)
