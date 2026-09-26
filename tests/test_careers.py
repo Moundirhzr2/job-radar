@@ -83,7 +83,6 @@ def test_detect_boards():
       <a href="https://jobs.eu.lever.co/beta">x</a>
       <iframe src="https://boards.greenhouse.io/embed/job_board?for=gamma"></iframe>
       <a href="https://job-boards.greenhouse.io/delta/jobs/1">x</a>
-      <a href="https://jobs.smartrecruiters.com/Epsilon/123">x</a>
       <a href="https://zeta.recruitee.com/o/stage">x</a>
       <script src="https://cdn.recruitee.com/widget.js"></script>
     """
@@ -92,7 +91,6 @@ def test_detect_boards():
         Board("lever", "beta", "eu"),
         Board("greenhouse", "gamma"),
         Board("greenhouse", "delta"),
-        Board("smartrecruiters", "epsilon"),
         Board("recruitee", "zeta"),
     }
     assert detect_boards(PAGE) == [Board("lever", "acme")]
@@ -131,17 +129,6 @@ def test_lever():
     assert cdi.remote is False  # hybrid is not full remote
     assert cdi.published_at == datetime(2025, 9, 1, 8, 0, tzinfo=UTC)
     assert week_end.kinds == {Kind.JOB, Kind.STUDENT_JOB}
-
-
-def test_smartrecruiters():
-    (o,) = fetch_board(
-        Board("smartrecruiters", "acme"), lambda url: _fixture("smartrecruiters.json")
-    )
-    assert o.url == "https://jobs.smartrecruiters.com/acme/7440001"
-    assert o.company == "Acme SAS"
-    assert o.kinds == {Kind.INTERNSHIP}
-    assert o.location.country == "FR"
-    assert o.location.has_point
 
 
 def test_recruitee():
@@ -189,10 +176,15 @@ def test_robots_rules_are_obeyed():
     assert "https://a.example/admin/jobs" not in requested
 
 
-def test_missing_robots_allows_and_server_error_blocks():
-    fetcher, requested, _ = make_fetcher({"a.example": (404, ""), "b.example": (503, "")})
+def test_missing_robots_allows_refused_or_failing_robots_blocks():
+    fetcher, requested, _ = make_fetcher(
+        {"a.example": (404, ""), "b.example": (503, ""), "c.example": (403, "")}
+    )
     assert fetcher.allowed("https://a.example/carrieres")
+    assert not fetcher.allowed("https://c.example/carrieres")
     assert not fetcher.allowed("https://b.example/carrieres")
     with pytest.raises(Disallowed):
         fetcher.get("https://b.example/carrieres")
     assert "https://b.example/carrieres" not in requested
+    # A failing robots.txt is not remembered: it is read again on the next attempt.
+    assert requested.count("https://b.example/robots.txt") == 2

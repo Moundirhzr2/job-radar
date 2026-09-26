@@ -3,7 +3,9 @@
 These feeds exist so that a company's offers can be displayed elsewhere (its own site, job
 sites, aggregators). We detect which tool a careers page is built on, then read that tool's
 public feed instead of the page itself: the data is complete and structured, and nothing is
-scraped. Feeds that need a key (Teamtailor, Workday...) are not used.
+scraped. Not used: feeds that need a key (Teamtailor, Workday...) and SmartRecruiters, whose
+API robots.txt only admits LinkedIn's crawler. For those companies, only the JobPosting data
+on their own careers pages is read.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ GetJson = Callable[[str], Any]
 
 @dataclass(frozen=True)
 class Board:
-    provider: str  # greenhouse | lever | smartrecruiters | recruitee
+    provider: str  # greenhouse | lever | recruitee
     identifier: str  # the company's name on that provider
     region: str = ""  # "eu" for the EU instances of Greenhouse and Lever
 
@@ -33,10 +35,6 @@ class Board:
         if self.provider == "lever":
             host = "api.eu.lever.co" if self.region == "eu" else "api.lever.co"
             return f"https://{host}/v0/postings/{self.identifier}?mode=json"
-        if self.provider == "smartrecruiters":
-            return (
-                f"https://api.smartrecruiters.com/v1/companies/{self.identifier}/postings?limit=100"
-            )
         if self.provider == "recruitee":
             return f"https://{self.identifier}.recruitee.com/api/offers/"
         raise ValueError(self.provider)
@@ -49,7 +47,6 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         re.compile(r"(?:job-)?boards(\.eu)?\.greenhouse\.io/(?!embed\b)([\w-]+)", re.I),
     ),
     ("lever", re.compile(r"jobs(\.eu)?\.lever\.co/([\w.-]+)", re.I)),
-    ("smartrecruiters", re.compile(r"(?:jobs|careers)\.smartrecruiters\.com/([\w-]+)", re.I)),
     ("recruitee", re.compile(r"\b([a-z0-9][a-z0-9-]*)\.recruitee\.com", re.I)),
 ]
 _NOT_COMPANIES = {"www", "app", "api", "cdn", "help", "blog", "docs", "support", "status"}
@@ -115,9 +112,11 @@ def parse_greenhouse(data: dict, board: Board) -> list[Offer]:
     return offers
 
 
-def parse_lever(data: list, board: Board) -> list[Offer]:
+def parse_lever(data: list | dict, board: Board) -> list[Offer]:
+    if not isinstance(data, list):  # {"ok": false, "error": "Document not found"}
+        return []
     offers = []
-    for post in data or []:
+    for post in data:
         title = (post.get("text") or "").strip()
         if not title:
             continue
@@ -141,42 +140,6 @@ def parse_lever(data: list, board: Board) -> list[Offer]:
                 location=Location(city=categories.get("location") or ""),
                 remote=True if workplace == "remote" else (False if workplace else None),
                 published_at=_ms_date(post.get("createdAt")),
-            )
-        )
-    return offers
-
-
-def parse_smartrecruiters(data: dict, board: Board) -> list[Offer]:
-    offers = []
-    for post in data.get("content") or []:
-        title = (post.get("name") or "").strip()
-        if not title:
-            continue
-        types = [
-            label
-            for key in ("typeOfEmployment", "experienceLevel")
-            if (label := ((post.get(key) or {}).get("label") or "").strip())
-        ]
-        loc = post.get("location") or {}
-        company = post.get("company") or {}
-        offers.append(
-            Offer(
-                source="ats:smartrecruiters",
-                source_id=f"{board.identifier}:{post.get('id')}",
-                url=f"https://jobs.smartrecruiters.com/{board.identifier}/{post.get('id')}",
-                title=title,
-                company=company.get("name") or "",
-                kinds=classify(title, types, part_time="part" in " ".join(types).lower()),
-                employment_types=types,
-                location=Location(
-                    city=loc.get("city") or "",
-                    postal_code=loc.get("postalCode") or "",
-                    country=(loc.get("country") or "").upper(),
-                    latitude=_float(loc.get("latitude")),
-                    longitude=_float(loc.get("longitude")),
-                ),
-                remote=loc.get("remote"),
-                published_at=_iso_date(post.get("releasedDate")),
             )
         )
     return offers
@@ -218,7 +181,6 @@ def parse_recruitee(data: dict, board: Board) -> list[Offer]:
 _PARSERS = {
     "greenhouse": parse_greenhouse,
     "lever": parse_lever,
-    "smartrecruiters": parse_smartrecruiters,
     "recruitee": parse_recruitee,
 }
 

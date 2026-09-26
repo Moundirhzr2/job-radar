@@ -1,8 +1,9 @@
 """HTTP access to company websites that follows the rules each site publishes.
 
 - robots.txt is read once per host and obeyed: a disallowed page is never requested.
-  If robots.txt says nothing about us, the page is allowed; if it cannot be read because the
-  server fails (5xx), we stay away from the host, as crawlers conventionally do.
+  No robots.txt (404) means everything is allowed. If robots.txt is refused (401/403) we keep
+  out of the whole site. If it cannot be read (5xx, network error) we don't request anything
+  and try reading it again next time.
 - Requests to the same host are spaced out (the site's Crawl-delay if it sets one).
 - The User-Agent names the project and links to it, so a site owner knows who is reading.
 """
@@ -49,9 +50,12 @@ class PoliteFetcher:
     def _host(self, url: str) -> _Host:
         parts = urlsplit(url)
         key = f"{parts.scheme}://{parts.netloc}"
-        if key not in self._hosts:
-            self._hosts[key] = self._load_robots(key)
-        return self._hosts[key]
+        host = self._hosts.get(key)
+        if host is None:
+            host = self._load_robots(key)
+            if host.robots is not None:  # an unreadable robots.txt is retried next time
+                self._hosts[key] = host
+        return host
 
     def _load_robots(self, base: str) -> _Host:
         parser = urllib.robotparser.RobotFileParser()
@@ -61,7 +65,9 @@ class PoliteFetcher:
             return _Host(robots=None, delay=self.default_delay)
         if resp.status_code >= 500:
             return _Host(robots=None, delay=self.default_delay)
-        # 4xx (usually 404): no robots.txt, everything is allowed.
+        if resp.status_code in (401, 403):
+            parser.disallow_all = True  # access to robots.txt itself refused: keep out
+        # Any other 4xx (usually 404): there is no robots.txt, everything is allowed.
         parser.parse(resp.text.splitlines() if resp.status_code < 400 else [])
         crawl_delay = parser.crawl_delay(ROBOTS_AGENT)
         delay = max(self.default_delay, float(crawl_delay or 0))
