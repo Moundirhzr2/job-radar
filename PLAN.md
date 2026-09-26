@@ -89,15 +89,45 @@ couche entreprises et le contact direct.
   aller vite, ou Next.js pour un vrai produit multi-utilisateurs).
 - **GitHub Actions** : tests à chaque push, collecte planifiée.
 
+## La partie RAG : comment elle sera construite
+
+Un RAG utilisable en vrai ne se limite pas à « chercher puis générer ». Chaque étape est
+mesurée avant qu'on fasse confiance à une réponse.
+
+1. **Réécriture de la requête.** Avant d'atteindre l'index, Claude transforme la demande et le
+   profil (« stage data près de Mulhouse » + CV) en une recherche structurée : termes et
+   synonymes FR/EN (analyste de données, BI, SQL, Power BI…), types de contrat, rayon.
+2. **Recherche hybride.** pgvector (sens) + plein texte français sans accents (mots exacts) +
+   filtre de distance PostGIS, fusionnés par Reciprocal Rank Fusion dans une seule requête SQL
+   (moteur repris du dépôt `Rag`).
+3. **Re-ranking.** Les 50 premiers résultats sont réordonnés par un modèle qui lit chaque paire
+   (profil, offre). Deux candidats comparés sur les mesures : un reranker multilingue local et
+   Claude en juge de pertinence.
+4. **Mesure avant confiance.**
+   - Jeu d'évaluation : environ 50 offres étiquetées « pertinente / non pertinente » par Moundir.
+   - Mesures par étape : rappel@50 après la recherche, nDCG@10 et MRR après le re-ranking.
+   - Tableau d'ablation : chaque étape activée ou non, pour savoir ce que chacune apporte.
+   - Seuil de confiance : si le meilleur score est trop faible, l'outil dit « pas assez d'offres
+     pertinentes » au lieu de répondre.
+   - Pour les fiches entreprises : chaque affirmation doit citer un passage, et un contrôle
+     automatique vérifie que le passage cité existe dans la source.
+
 ## Feuille de route
 
-| Semaines | Résultat | Statut |
+| Étape | Résultat | Statut |
 |---|---|---|
-| 1–2 | Radar : carte, rayon, offres des API officielles, entreprises autour, chemins de contact | En cours |
-| 3 | Lecture des offres sur les pages carrières des entreprises | En cours (lecteur JobPosting et flux) |
-| 4 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | À faire |
-| 5 | Suivi + statistiques de réponse, test avec des camarades | À faire |
-| 6 | Démo en ligne, README, mesures, ligne de CV | À faire |
+| 1 | Base PostgreSQL + PostGIS + pgvector, requête radar | Fait |
+| 2 | Lecture des sites carrières : JobPosting, flux ATS, sitemaps, robots.txt | Fait, testé sur données réelles |
+| 3 | Entreprises autour d'un point (annuaire officiel), dirigeants des petites entreprises | Fait |
+| 4 | Géolocalisation des offres, ligne de commande | Fait |
+| 5 | Offres France Travail + La Bonne Boîte | En attente des clés francetravail.io |
+| 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | À faire (clé Anthropic + étiquettes) |
+| 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | À faire |
+| 8 | Application web avec la carte, suivi des candidatures | À faire |
+| 9 | Démo en ligne, mesures, ligne de CV | À faire |
+
+À traiter : trouver le site carrières d'une entreprise à partir de l'annuaire (qui ne donne pas
+de site web) : Wikidata (données ouvertes, par SIREN), offres France Travail, recherche web.
 
 ## Ce que Moundir fait lui-même
 
@@ -118,8 +148,8 @@ fonctionnalité codée par lui avec accompagnement.
 
 ## Prérequis
 
-- [ ] Dépôt `job-radar` créé et relié à la session
-- [ ] Réseau de l'environnement en accès Full
+- [x] Dépôt `job-radar` créé et relié à la session
+- [x] Réseau de l'environnement en accès Full
 - [ ] Application francetravail.io avec Offres d'emploi v2 et La Bonne Boîte
 - [ ] Clé API Anthropic avec plafond de dépenses
 - [ ] Clés enregistrées en variables d'environnement
