@@ -1,0 +1,30 @@
+{"total_results": 3, "page": 1, "per_page": 25, "total_pages": 1, "results": [
+  {"siren": "900000001", "nom_complet": "DATA ACME (FICTIVE)", "activite_principale": "62.01Z",
+   "section_activite_principale": "J", "tranche_effectif_salarie": "11", "categorie_entreprise": "PME",
+   "caractere_employeur": "O", "etat_administratif": "A",
+   "dirigeants": [
+     {"nom": "DUPONT", "prenoms": "MARIE CLAIRE", "annee_de_naissance": "1980", "date_de_naissance": "1980-04",
+      "qualite": "Président de SAS", "type_dirigeant": "personne physique"},
+     {"nom": "AUDIT", "prenoms": "JEAN", "date_de_naissance": "1970-01",
+      "qualite": "Commissaire aux comptes titulaire", "type_dirigeant": "personne physique"},
+     {"denomination": "HOLDING ACME", "qualite": "Directeur général", "type_dirigeant": "personne morale"}
+   ],
+   "matching_etablissements": [
+     {"siret": "90000000100017", "adresse": "1 RUE DE LA GARE 68100 MULHOUSE", "code_postal": "68100",
+      "libelle_commune": "MULHOUSE", "latitude": "47.7430", "longitude": "7.3420", "date_creation": "2024-03-01",
+      "est_siege": true, "tranche_effectif_salarie": "11"}
+   ]},
+  {"siren": "900000002", "nom_complet": "GRAND GROUPE (FICTIF)", "activite_principale": "61.10Z",
+   "section_activite_principale": "J", "tranche_effectif_salarie": "53", "categorie_entreprise": "GE",
+   "caractere_employeur": null, "etat_administratif": "A",
+   "dirigeants": [{"nom": "MARTIN", "prenoms": "PAUL", "date_de_naissance": "1960-02",
+                   "qualite": "Président", "type_dirigeant": "personne physique"}],
+   "matching_etablissements": [
+     {"siret": "90000000200011", "adresse": "5 AVENUE DE COLMAR 68200 MULHOUSE", "code_postal": "68200",
+      "libelle_commune": "MULHOUSE", "latitude": "47.7600", "longitude": "7.3300", "date_creation": "1995-06-01",
+      "est_siege": false, "tranche_effectif_salarie": "21"}
+   ]},
+  {"siren": "900000003", "nom_complet": "SANS SALARIE (FICTIF)", "activite_principale": "62.02A",
+   "tranche_effectif_salarie": "NN", "caractere_employeur": "N", "etat_administratif": "A",
+   "matching_etablissements": []}
+]}

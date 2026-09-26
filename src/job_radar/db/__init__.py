@@ -12,6 +12,7 @@ import psycopg
 from pgvector.psycopg import register_vector
 
 from ..models import Kind, Offer
+from ..sources.companies import Company
 
 
 def connect(url: str) -> psycopg.Connection:
@@ -179,3 +180,134 @@ def offers_within(
         },
     ).fetchall()
     return [RadarOffer(*row) for row in rows]
+
+
+def directory_url(siren: str) -> str:
+    """The company's public page in the official directory: the source we cite."""
+    return f"https://annuaire-entreprises.data.gouv.fr/entreprise/{siren}"
+
+
+def upsert_companies(conn: psycopg.Connection, companies: Iterable[Company]) -> int:
+    """Save companies, their establishments and (small companies only) their officers."""
+    count = 0
+    with conn.transaction(), conn.cursor() as cur:
+        for c in companies:
+            if not c.siren:
+                continue
+            (company_id,) = cur.execute(
+                """
+                INSERT INTO companies (siren, name, naf_code, naf_section, headcount_range,
+                                       category)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (siren) DO UPDATE SET
+                    name = EXCLUDED.name, naf_code = EXCLUDED.naf_code,
+                    naf_section = EXCLUDED.naf_section,
+                    headcount_range = EXCLUDED.headcount_range,
+                    category = EXCLUDED.category, updated_at = now()
+                RETURNING id
+                """,
+                (c.siren, c.name, c.naf_code, c.naf_section, c.headcount_range, c.category),
+            ).fetchone()
+            cur.executemany(
+                """
+                INSERT INTO establishments (siret, company_id, address, postal_code, city,
+                                            location, opened_on, is_head_office,
+                                            headcount_range)
+                VALUES (%(siret)s, %(company_id)s, %(address)s, %(postal_code)s, %(city)s,
+                        CASE WHEN %(lon)s::float8 IS NULL OR %(lat)s::float8 IS NULL THEN NULL
+                             ELSE ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography
+                        END,
+                        %(opened_on)s, %(is_head_office)s, %(headcount_range)s)
+                ON CONFLICT (siret) DO UPDATE SET
+                    address = EXCLUDED.address, postal_code = EXCLUDED.postal_code,
+                    city = EXCLUDED.city, location = EXCLUDED.location,
+                    opened_on = EXCLUDED.opened_on, is_head_office = EXCLUDED.is_head_office,
+                    headcount_range = EXCLUDED.headcount_range
+                """,
+                [
+                    {
+                        "siret": e.siret,
+                        "company_id": company_id,
+                        "address": e.address,
+                        "postal_code": e.postal_code,
+                        "city": e.city,
+                        "lat": e.latitude,
+                        "lon": e.longitude,
+                        "opened_on": e.opened_on,
+                        "is_head_office": e.is_head_office,
+                        "headcount_range": e.headcount_range,
+                    }
+                    for e in c.establishments
+                    if e.siret
+                ],
+            )
+            # Officers are replaced as a whole: someone who left the company must disappear.
+            cur.execute(
+                "DELETE FROM company_contacts WHERE company_id = %s AND kind = 'registry_officer'",
+                (company_id,),
+            )
+            cur.executemany(
+                """
+                INSERT INTO company_contacts (company_id, kind, label, value, source_url)
+                VALUES (%s, 'registry_officer', %s, %s, %s)
+                ON CONFLICT DO NOTHING
+                """,
+                [(company_id, o.role, o.name, directory_url(c.siren)) for o in c.officers],
+            )
+            count += 1
+    return count
+
+
+@dataclass(frozen=True)
+class RadarCompany:
+    id: int
+    siren: str
+    name: str
+    naf_code: str
+    headcount_range: str
+    city: str
+    distance_km: float
+    officers: list[str]
+
+
+def companies_within(
+    conn: psycopg.Connection,
+    latitude: float,
+    longitude: float,
+    radius_km: float,
+    naf_prefixes: Sequence[str] | None = None,
+    limit: int = 200,
+) -> list[RadarCompany]:
+    """Companies with an establishment within the radius, by their closest establishment."""
+    rows = conn.execute(
+        """
+        WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p),
+        nearest AS (
+            SELECT DISTINCT ON (e.company_id) e.company_id, e.city,
+                   ST_Distance(e.location, here.p) / 1000 AS distance_km
+            FROM establishments e, here
+            WHERE ST_DWithin(e.location, here.p, %(radius_m)s)
+            ORDER BY e.company_id, ST_Distance(e.location, here.p)
+        )
+        SELECT c.id, c.siren, c.name, coalesce(c.naf_code, ''),
+               coalesce(c.headcount_range, 'NN'), n.city, n.distance_km,
+               coalesce(array_agg(k.value || ' (' || k.label || ')' ORDER BY k.id)
+                        FILTER (WHERE k.id IS NOT NULL), '{}')
+        FROM nearest n
+        JOIN companies c ON c.id = n.company_id
+        LEFT JOIN company_contacts k ON k.company_id = c.id AND k.kind = 'registry_officer'
+        WHERE %(prefixes)s::text[] IS NULL
+           OR c.naf_code LIKE ANY (SELECT p || '%%' FROM unnest(%(prefixes)s::text[]) p)
+        GROUP BY c.id, n.city, n.distance_km
+        ORDER BY n.distance_km
+        LIMIT %(limit)s
+        """,
+        {
+            "lat": latitude,
+            "lon": longitude,
+            "radius_m": radius_km * 1000,
+            "prefixes": list(naf_prefixes) if naf_prefixes else None,
+            "limit": limit,
+        },
+    ).fetchall()
+    return [RadarCompany(*row) for row in rows]

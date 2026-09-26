@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS companies (
     siren            text UNIQUE,
     name             text NOT NULL,
     naf_code         text,                 -- activité principale (nomenclature INSEE)
-    headcount_range  text,                 -- tranche d'effectif salarié
+    naf_section      text,                 -- section d'activité (J = information et communication)
+    headcount_range  text,                 -- tranche d'effectif salarié (code INSEE)
+    category         text,                 -- PME, ETI, GE
     website          text,
     careers_url      text,
     created_at       timestamptz NOT NULL DEFAULT now(),
@@ -27,7 +29,8 @@ CREATE TABLE IF NOT EXISTS establishments (
     city          text,
     location      geography(Point, 4326),
     opened_on     date,                    -- un établissement récent est un signal d'embauche
-    is_head_office boolean NOT NULL DEFAULT false
+    is_head_office boolean NOT NULL DEFAULT false,
+    headcount_range text
 );
 CREATE INDEX IF NOT EXISTS establishments_location ON establishments USING gist (location);
 
