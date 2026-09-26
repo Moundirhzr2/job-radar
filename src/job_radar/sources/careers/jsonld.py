@@ -71,9 +71,10 @@ def _first(value: Any) -> Any:
 
 
 def _text(value: Any) -> str:
+    """A plain string from a JSON-LD value. Sites often leave HTML entities in titles."""
     if isinstance(value, dict):
         value = value.get("name") or value.get("@value") or ""
-    return str(value).strip() if value is not None else ""
+    return html.unescape(str(value)).strip() if value is not None else ""
 
 
 def _date(value: Any) -> datetime | None:

@@ -6,6 +6,8 @@
   and try reading it again next time.
 - Requests to the same host are spaced out (the site's Crawl-delay if it sets one).
 - The User-Agent names the project and links to it, so a site owner knows who is reading.
+- Content signals (`Content-Signal: search=yes, ai-train=no, ai-input=yes`) are recorded: a
+  site that says ai-input=no is never sent to an AI model (used by the company brief).
 """
 
 from __future__ import annotations
@@ -32,7 +34,36 @@ class Disallowed(Exception):
 class _Host:
     robots: urllib.robotparser.RobotFileParser | None  # None: robots.txt unreachable -> blocked
     delay: float
+    signals: dict[str, str] = field(default_factory=dict)
     last_request: float = 0.0
+
+
+def parse_content_signals(lines: list[str], agent: str = ROBOTS_AGENT) -> dict[str, str]:
+    """Content-Signal values that apply to `agent`: its own group first, then `*`."""
+    by_agent: dict[str, dict[str, str]] = {}
+    agents: list[str] = []
+    in_rules = False
+    for raw in lines:
+        line = raw.split("#", 1)[0].strip()
+        if ":" not in line:
+            continue
+        key, value = (part.strip() for part in line.split(":", 1))
+        key = key.lower()
+        if key == "user-agent":
+            if in_rules:  # a new group starts
+                agents, in_rules = [], False
+            agents.append(value.lower())
+        else:
+            in_rules = True
+            if key == "content-signal":
+                for pair in value.split(","):
+                    if "=" in pair:
+                        name, _, setting = pair.partition("=")
+                        for a in agents or ["*"]:
+                            by_agent.setdefault(a, {})[name.strip().lower()] = (
+                                setting.strip().lower()
+                            )
+    return by_agent.get(agent.lower()) or by_agent.get("*") or {}
 
 
 @dataclass
@@ -68,14 +99,24 @@ class PoliteFetcher:
         if resp.status_code in (401, 403):
             parser.disallow_all = True  # access to robots.txt itself refused: keep out
         # Any other 4xx (usually 404): there is no robots.txt, everything is allowed.
-        parser.parse(resp.text.splitlines() if resp.status_code < 400 else [])
+        lines = resp.text.splitlines() if resp.status_code < 400 else []
+        parser.parse(lines)
         crawl_delay = parser.crawl_delay(ROBOTS_AGENT)
         delay = max(self.default_delay, float(crawl_delay or 0))
-        return _Host(robots=parser, delay=delay)
+        return _Host(robots=parser, delay=delay, signals=parse_content_signals(lines))
 
     def allowed(self, url: str) -> bool:
         host = self._host(url)
         return host.robots is not None and host.robots.can_fetch(ROBOTS_AGENT, url)
+
+    def sitemaps(self, url: str) -> list[str]:
+        """Sitemaps the site declares in its robots.txt."""
+        host = self._host(url)
+        return list(host.robots.site_maps() or []) if host.robots else []
+
+    def allows_ai_input(self, url: str) -> bool:
+        """False when the site opts out of its content being used as input to an AI model."""
+        return self._host(url).signals.get("ai-input") != "no"
 
     def get(self, url: str) -> httpx.Response:
         host = self._host(url)
