@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- Page carrières FICTIVE pour les tests : structure des vraies pages, contenu inventé. -->
+<html><head>
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Organization", "name": "Acme"}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "JobPosting",
+      "title": "Stage Data Analyst (6 mois)",
+      "identifier": {"@type": "PropertyValue", "name": "Acme", "value": "ACME-42"},
+      "url": "https://acme.example/carrieres/stage-data-analyst",
+      "datePosted": "2026-09-01",
+      "validThrough": "2026-11-30T23:59:59Z",
+      "employmentType": "INTERN",
+      "hiringOrganization": {"@type": "Organization", "name": "Acme", "sameAs": "https://acme.example"},
+      "jobLocation": {
+        "@type": "Place",
+        "address": {"@type": "PostalAddress", "addressLocality": "Mulhouse",
+                    "postalCode": "68100", "addressCountry": "FR"},
+        "geo": {"@type": "GeoCoordinates", "latitude": "47.7508", "longitude": "7.3359"}
+      },
+      "description": "&lt;p&gt;Vous rejoindrez l&amp;#39;équipe data.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;SQL&lt;/li&gt;&lt;li&gt;Power BI&lt;/li&gt;&lt;/ul&gt;",
+    },
+    {
+      "@type": ["JobPosting"],
+      "title": "Alternance - Développeur Python",
+      "datePosted": "2026-08-20T09:00:00+02:00",
+      "employmentType": ["FULL_TIME", "OTHER"],
+      "hiringOrganization": "Acme",
+      "jobLocationType": "TELECOMMUTE",
+      "description": "<p>Contrat d'apprentissage de 2 ans.</p>"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">{ this is not json }</script>
+</head><body><a href="https://jobs.lever.co/acme">Toutes nos offres</a></body></html>

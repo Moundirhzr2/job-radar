@@ -1,0 +1,37 @@
+[project]
+name = "job-radar"
+version = "0.1.0"
+description = "Radar de l'emploi local pour étudiants : offres et entreprises autour de soi, et le bon contact pour aller à la source."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Moundir Houazar" }]
+dependencies = [
+    "beautifulsoup4>=4.12",
+    "httpx>=0.27",
+    "pgvector>=0.4",
+    "psycopg[binary]>=3.2",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+radar = "job_radar.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/job_radar"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

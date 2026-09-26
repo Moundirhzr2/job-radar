@@ -1,0 +1,10 @@
+[
+  {"id": "a1b2", "text": "Business Analyst - CDI", "hostedUrl": "https://jobs.lever.co/acme/a1b2",
+   "applyUrl": "https://jobs.lever.co/acme/a1b2/apply",
+   "categories": {"commitment": "Full-time", "location": "Colmar", "team": "Data"},
+   "createdAt": 1756713600000, "descriptionPlain": "Rejoignez-nous.",
+   "lists": [{"text": "Profil", "content": "<li>SQL</li><li>Excel</li>"}],
+   "additionalPlain": "Télétravail partiel.", "workplaceType": "hybrid"},
+  {"id": "c3d4", "text": "Vendeur week-end", "hostedUrl": "https://jobs.lever.co/acme/c3d4",
+   "categories": {"commitment": "Part-time", "location": "Mulhouse"}, "createdAt": 1756800000000}
+]

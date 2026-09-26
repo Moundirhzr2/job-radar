@@ -1,0 +1,7 @@
+{"offers": [
+  {"id": 555, "title": "Job étudiant - Accueil", "company_name": "Acme",
+   "careers_url": "https://acme.recruitee.com/o/job-etudiant-accueil",
+   "description": "<p>12h par semaine.</p>", "requirements": "<p>Souriant(e).</p>",
+   "city": "Mulhouse", "postal_code": "68100", "country_code": "FR", "remote": false,
+   "employment_type_code": "parttime", "published_at": "2026-09-12 08:30:00 UTC"}
+]}

@@ -1,0 +1,7 @@
+{"jobs": [
+  {"id": 101, "title": "Data Engineer Intern", "absolute_url": "https://job-boards.greenhouse.io/acme/jobs/101",
+   "location": {"name": "Strasbourg, France"}, "updated_at": "2026-09-10T10:00:00-04:00",
+   "first_published": "2026-09-01T08:00:00-04:00", "company_name": "Acme",
+   "content": "&lt;p&gt;Build pipelines.&lt;/p&gt;"},
+  {"id": 102, "title": "", "absolute_url": "https://job-boards.greenhouse.io/acme/jobs/102"}
+]}

@@ -1,0 +1,8 @@
+{"offset": 0, "limit": 100, "totalFound": 1, "content": [
+  {"id": "7440001", "name": "Stagiaire BI H/F", "releasedDate": "2026-09-05T12:00:00.000Z",
+   "company": {"identifier": "Acme", "name": "Acme SAS"},
+   "location": {"city": "Mulhouse", "region": "Grand Est", "country": "fr", "remote": false,
+                "latitude": "47.75", "longitude": "7.34"},
+   "typeOfEmployment": {"id": "intern", "label": "Stage"},
+   "experienceLevel": {"id": "internship", "label": "Internship"}}
+]}
