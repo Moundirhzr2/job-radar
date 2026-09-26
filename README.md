@@ -13,6 +13,7 @@ Projet en construction : le produit, les règles et l'avancement sont décrits d
 ## Développement
 
 ```bash
+docker compose up -d --wait   # PostgreSQL 17 + PostGIS + pgvector
 uv sync
 uv run pytest
 ```
