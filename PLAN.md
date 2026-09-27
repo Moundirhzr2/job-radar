@@ -120,11 +120,15 @@ mesurée avant qu'on fasse confiance à une réponse.
 | 2 | Lecture des sites carrières : JobPosting, flux ATS, sitemaps, robots.txt | Fait, testé sur données réelles |
 | 3 | Entreprises autour d'un point (annuaire officiel), dirigeants des petites entreprises | Fait |
 | 4 | Géolocalisation des offres, ligne de commande | Fait |
-| 5 | Offres France Travail + La Bonne Boîte | En attente des clés francetravail.io |
+| 5 | Offres France Travail (fait : 345 offres autour de Mulhouse) + La Bonne Boîte | La Bonne Boîte : accès à faire valider par France Travail |
 | 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | À faire (clé Anthropic + étiquettes) |
 | 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | À faire |
 | 8 | Application web avec la carte, suivi des candidatures | À faire |
 | 9 | Démo en ligne, mesures, ligne de CV | À faire |
+
+Qualité des données repérée sur France Travail : des « alternances » sont publiées par des écoles
+qui recrutent des élèves pour leurs formations, pas par des employeurs. À signaler en croisant
+avec l'annuaire des entreprises, qui indique les organismes de formation.
 
 À traiter : trouver le site carrières d'une entreprise à partir de l'annuaire (qui ne donne pas
 de site web) : Wikidata (données ouvertes, par SIREN), offres France Travail, recherche web.

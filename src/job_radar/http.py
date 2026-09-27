@@ -31,8 +31,12 @@ class ApiClient:
     clock: Callable[[], float] = time.monotonic
     _last: float = 0.0
 
-    def get(self, path: str, params: dict | None = None) -> Any:
-        """GET a JSON resource; retries dropped connections, 429 and 5xx with backoff."""
+    def get(self, path: str, params: dict | None = None, headers: dict | None = None) -> Any:
+        """GET a JSON resource; retries dropped connections, 429 and 5xx with backoff.
+
+        200 and 206 (a page of a longer list) return the JSON body; 204 (nothing found)
+        returns None.
+        """
         error: Exception | None = None
         for attempt in range(self.retries + 1):
             wait = self._last + self.min_interval - self.clock()
@@ -40,11 +44,13 @@ class ApiClient:
                 self.sleep(wait)
             self._last = self.clock()
             try:
-                resp = self.client.get(f"{self.base_url}{path}", params=params)
+                resp = self.client.get(f"{self.base_url}{path}", params=params, headers=headers)
             except httpx.TransportError as exc:
                 error = exc
             else:
-                if resp.status_code == 200:
+                if resp.status_code == 204:
+                    return None
+                if resp.status_code in (200, 206):
                     return resp.json()
                 if resp.status_code not in RETRY_STATUS:
                     raise ApiError(f"{path}: HTTP {resp.status_code}: {resp.text[:200]}")

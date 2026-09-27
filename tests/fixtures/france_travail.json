@@ -1,0 +1,16 @@
+{"resultats": [
+  {"id": "900AAAA", "intitule": "Alternant(e) Data Analyst (H/F)", "description": "Analyse de données, SQL, Power BI.",
+   "dateCreation": "2026-09-20T08:00:00.000Z",
+   "lieuTravail": {"libelle": "68 - MULHOUSE", "latitude": 47.75, "longitude": 7.34, "codePostal": "68100", "commune": "68224"},
+   "entreprise": {"nom": "ACME DATA (FICTIVE)"},
+   "typeContrat": "CDD", "typeContratLibelle": "Contrat à durée déterminée - 24 Mois", "natureContrat": "Contrat apprentissage",
+   "dureeTravailLibelleConverti": "Temps plein", "alternance": true,
+   "contact": {"nom": "ACME DATA - Mme Exemple", "courriel": "Pour postuler, utiliser le lien suivant : https://candidat.francetravail.fr/offres/recherche/detail/900AAAA"},
+   "origineOffre": {"origine": "1", "urlOrigine": "https://candidat.francetravail.fr/offres/recherche/detail/900AAAA"}},
+  {"id": "900BBBB", "intitule": "Employé polyvalent week-end (H/F)", "description": "12h par semaine.",
+   "dateCreation": "2026-09-21T08:00:00.000Z",
+   "lieuTravail": {"libelle": "68 - ILLZACH", "codePostal": "68110"},
+   "typeContrat": "CDI", "typeContratLibelle": "Contrat à durée indéterminée", "natureContrat": "Contrat travail",
+   "dureeTravailLibelleConverti": "Temps partiel", "alternance": false,
+   "origineOffre": {"origine": "2"}}
+]}

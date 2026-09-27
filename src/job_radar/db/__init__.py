@@ -46,6 +46,7 @@ def content_hash(offer: Offer) -> str:
         offer.location.longitude,
         offer.remote,
         offer.valid_through.isoformat() if offer.valid_through else None,
+        offer.contact,
     ]
     return hashlib.sha256(json.dumps(fields, ensure_ascii=False).encode()).hexdigest()
 
@@ -60,12 +61,14 @@ class LoadReport:
 _UPSERT = """
 INSERT INTO offers (source, source_id, url, title, company_name, description, kinds,
                     employment_types, city, postal_code, country, location,
-                    location_precision, remote, published_at, valid_through, content_hash)
+                    location_precision, remote, published_at, valid_through, contact,
+                    content_hash)
 VALUES (%(source)s, %(source_id)s, %(url)s, %(title)s, %(company)s, %(description)s,
         %(kinds)s, %(employment_types)s, %(city)s, %(postal_code)s, %(country)s,
         CASE WHEN %(lon)s::float8 IS NULL OR %(lat)s::float8 IS NULL THEN NULL
              ELSE ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography END,
-        %(precision)s, %(remote)s, %(published_at)s, %(valid_through)s, %(hash)s)
+        %(precision)s, %(remote)s, %(published_at)s, %(valid_through)s, %(contact)s,
+        %(hash)s)
 ON CONFLICT (source, source_id) DO UPDATE SET
     url = EXCLUDED.url, title = EXCLUDED.title, company_name = EXCLUDED.company_name,
     description = EXCLUDED.description, kinds = EXCLUDED.kinds,
@@ -74,6 +77,7 @@ ON CONFLICT (source, source_id) DO UPDATE SET
     location = EXCLUDED.location, location_precision = EXCLUDED.location_precision,
     remote = EXCLUDED.remote,
     published_at = EXCLUDED.published_at, valid_through = EXCLUDED.valid_through,
+    contact = EXCLUDED.contact,
     content_hash = EXCLUDED.content_hash,
     -- an edited offer loses its embedding: it will be recomputed from the new text
     embedding = CASE WHEN offers.content_hash = EXCLUDED.content_hash
@@ -130,6 +134,7 @@ def upsert_offers(conn: psycopg.Connection, offers: Iterable[Offer]) -> LoadRepo
                 "remote": offer.remote,
                 "published_at": offer.published_at,
                 "valid_through": offer.valid_through,
+                "contact": offer.contact,
                 "hash": h,
             }
         )
@@ -149,6 +154,7 @@ class RadarOffer:
     distance_km: float
     published_at: object
     precision: str
+    contact: str
 
 
 def offers_within(
@@ -168,7 +174,7 @@ def offers_within(
         WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p)
         SELECT o.id, o.title, o.company_name, o.url, o.city, o.kinds,
                ST_Distance(o.location, here.p) / 1000 AS distance_km, o.published_at,
-               o.location_precision
+               o.location_precision, o.contact
         FROM offers o, here
         WHERE ST_DWithin(o.location, here.p, %(radius_m)s)
           AND (%(kinds)s::text[] IS NULL OR o.kinds && %(kinds)s::text[])

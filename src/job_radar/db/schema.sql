@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS offers (
     remote           boolean,
     published_at     timestamptz,
     valid_through    timestamptz,
+    contact          text NOT NULL DEFAULT '',  -- publié par l'employeur dans l'offre
     first_seen       timestamptz NOT NULL DEFAULT now(),
     last_seen        timestamptz NOT NULL DEFAULT now(),  -- l'offre a disparu si last_seen stagne
     content_hash     text NOT NULL,

@@ -45,6 +45,7 @@ class Offer:
     remote: bool | None = None
     published_at: datetime | None = None
     valid_through: datetime | None = None
+    contact: str = ""  # contact published by the employer in the offer, as published
 
 
 _APPRENTICESHIP = re.compile(

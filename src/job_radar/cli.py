@@ -20,6 +20,7 @@ from .sources.careers.ats import Board, fetch_board
 from .sources.careers.fetch import PoliteFetcher
 from .sources.careers.site import read_career_site
 from .sources.companies import HEADCOUNT_LABEL, CompanyDirectory
+from .sources.france_travail import CredentialsError, FranceTravail
 from .sources.geo import Geocoder, GeocodingUnavailable, find_towns, place
 
 DEFAULT_DATABASE_URL = "postgresql://radar:radar@localhost:5433/radar"
@@ -113,6 +114,19 @@ def cmd_feed(args) -> None:
     )
 
 
+def cmd_francetravail(args) -> None:
+    town = _town(args.town)
+    kinds = [Kind(k) for k in args.kind] if args.kind else [None]
+    ft = FranceTravail()
+    offers = []
+    try:
+        for kind in kinds:
+            offers.extend(ft.search(town.insee_code, args.radius, kind, args.keywords, args.max))
+    except CredentialsError as exc:
+        sys.exit(str(exc))
+    _store(offers, f"France Travail autour de {town.name} ({args.radius:g} km)")
+
+
 def cmd_offers(args) -> None:
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else None
@@ -123,6 +137,8 @@ def cmd_offers(args) -> None:
         what = ", ".join(KIND_LABELS[k] for k in o.kinds)
         print(f"{approx}{o.distance_km:5.1f} km  [{what}] {o.title[:60]}")
         print(f"{'':10}{o.company or '?'} — {o.city} — {o.url}")
+        if o.contact:
+            print(f"{'':10}contact publié : {o.contact[:120]}")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -150,6 +166,14 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("identifier")
     p.add_argument("--region", default="", choices=["", "eu"])
     p.set_defaults(func=cmd_feed)
+
+    p = sub.add_parser("francetravail", help="les offres France Travail autour d'une commune")
+    p.add_argument("--town", required=True)
+    p.add_argument("--radius", type=float, default=20)
+    p.add_argument("--kind", nargs="+", choices=[k.value for k in Kind])
+    p.add_argument("--keywords", default="", help="mots-clés, ex. data")
+    p.add_argument("--max", type=int, default=1000, help="offres au plus par type")
+    p.set_defaults(func=cmd_francetravail)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)
