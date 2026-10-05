@@ -168,6 +168,59 @@ def cmd_index(args) -> None:
         print(f"  {done}/{len(todo)} offres indexées")
 
 
+def cmd_search(args) -> None:
+    from pathlib import Path
+
+    from .embed import Embedder
+    from .pipeline import CONFIDENCE, find
+    from .rerank import Reranker
+    from .rewrite import rewrite
+
+    profile = Path(args.profile).read_text(encoding="utf-8") if args.profile else ""
+    rewritten = rewrite(args.request, profile) if args.rewrite else None
+    town_name = args.town or (rewritten.town if rewritten else None)
+    if not town_name:
+        sys.exit("Indiquer une commune (--town), ou la nommer dans la demande.")
+    town = _town(town_name)
+    radius = args.radius or (rewritten.radius_km if rewritten and rewritten.radius_km else 30)
+    results = find(
+        _connect(),
+        args.request,
+        town.latitude,
+        town.longitude,
+        radius,
+        Embedder(),
+        kinds=[Kind(k) for k in args.kind or ()],
+        profile=profile,
+        rewriter=(lambda request, prof: rewritten) if rewritten else None,
+        reranker=Reranker() if args.rerank else None,
+        mode=args.mode,
+        limit=args.n,
+    )
+    q = results.query
+    print(f"Recherche : « {q.text} » autour de {town.name} ({radius:g} km)")
+    if q.keywords:
+        print(f"Mots-clés : {', '.join(q.keywords)}")
+    if q.kinds:
+        print(f"Contrats : {', '.join(KIND_LABELS[k.value] for k in q.kinds)}")
+    print()
+    if not results.confident:
+        best = (
+            f" (meilleur score {results.best_score:.2f} < {CONFIDENCE})"
+            if results.best_score
+            else ""
+        )
+        print(
+            f"Pas assez d'offres pertinentes pour cette demande{best}. "
+            "Élargir le rayon ou la demande.\n"
+        )
+    for i, c in enumerate(results.candidates, 1):
+        score = f"{c.extra['rerank']:.2f}" if "rerank" in c.extra else f"{c.score:.3f}"
+        what = ", ".join(KIND_LABELS[k] for k in c.kinds)
+        print(f"{i:2}. [{score}] {c.title[:70]}  ({what}, {c.distance_km:.0f} km)")
+        print(f"      {c.company or '?'} — {c.city} — {c.url}")
+
+
 def cmd_offers(args) -> None:
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else None
@@ -229,6 +282,20 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser(
         "index", help="calcule les vecteurs des offres nouvelles ou modifiées"
     ).set_defaults(func=cmd_index)
+
+    p = sub.add_parser("search", help="recherche les offres qui correspondent à une demande")
+    p.add_argument("request", help='ex. "alternance data"')
+    p.add_argument("--town", help="commune (sinon celle nommée dans la demande)")
+    p.add_argument("--radius", type=float, help="en km (défaut 30)")
+    p.add_argument("--kind", nargs="+", choices=[k.value for k in Kind])
+    p.add_argument(
+        "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
+    )
+    p.add_argument("--mode", choices=["hybrid", "vector", "fulltext"], default="hybrid")
+    p.add_argument("--no-rewrite", dest="rewrite", action="store_false", help="sans Claude")
+    p.add_argument("--no-rerank", dest="rerank", action="store_false")
+    p.add_argument("-n", type=int, default=15, help="nombre de résultats")
+    p.set_defaults(func=cmd_search)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)
