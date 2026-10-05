@@ -17,7 +17,11 @@ from ..sources.la_bonne_boite import HiringCompany
 
 
 def connect(url: str) -> psycopg.Connection:
-    conn = psycopg.connect(url)
+    """Autocommit connection: each `with conn.transaction()` block is a real transaction that
+    commits when it ends. (Without autocommit, a block opened after any query is only a
+    savepoint inside an implicit transaction, and its writes are lost when the program exits
+    without an explicit commit.)"""
+    conn = psycopg.connect(url, autocommit=True)
     try:
         register_vector(conn)
     except psycopg.ProgrammingError:
@@ -441,3 +445,17 @@ def likely_employers(
         },
     ).fetchall()
     return [LikelyEmployer(*row) for row in rows]
+
+
+def offers_to_embed(conn: psycopg.Connection, limit: int = 5000) -> list[tuple]:
+    """Offers without an embedding (new, or edited since they were embedded)."""
+    return conn.execute(
+        "SELECT id, title, company_name, city, kinds, description FROM offers "
+        "WHERE embedding IS NULL ORDER BY id LIMIT %s",
+        (limit,),
+    ).fetchall()
+
+
+def set_embeddings(conn: psycopg.Connection, rows: Sequence[tuple[int, object]]) -> None:
+    with conn.transaction(), conn.cursor() as cur:
+        cur.executemany("UPDATE offers SET embedding = %s WHERE id = %s", [(v, i) for i, v in rows])

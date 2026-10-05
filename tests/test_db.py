@@ -88,3 +88,16 @@ def test_radar_uses_the_spatial_index(conn):
         )
     )
     assert "offers_location" in plan
+
+
+def test_writes_are_visible_from_another_connection(conn):
+    """A write must be committed, not left in an open transaction (seen by its own
+    connection only, then lost when the program exits)."""
+    from tests.conftest import TEST_DATABASE_URL
+
+    db.upsert_offers(conn, [offer("a", "Mulhouse")])
+    (offer_id,) = conn.execute("SELECT id FROM offers").fetchone()
+    db.set_embeddings(conn, [(offer_id, np.ones(1024, dtype=np.float32))])
+    with db.connect(TEST_DATABASE_URL) as other:
+        row = other.execute("SELECT count(*), count(embedding) FROM offers").fetchone()
+    assert row == (1, 1)
