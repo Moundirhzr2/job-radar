@@ -13,6 +13,7 @@ from pgvector.psycopg import register_vector
 
 from ..models import Kind, Offer
 from ..sources.companies import Company
+from ..sources.la_bonne_boite import HiringCompany
 
 
 def connect(url: str) -> psycopg.Connection:
@@ -338,3 +339,105 @@ def set_location(conn: psycopg.Connection, offer_id: int, lat: float, lon: float
         "location_precision = 'town' WHERE id = %s",
         (lon, lat, offer_id),
     )
+
+
+def upsert_hiring(conn: psycopg.Connection, items: Iterable[HiringCompany]) -> int:
+    """Save La Bonne Boîte results: the company, its establishment and the hiring potential.
+
+    Companies already known from the directory keep their directory data; new ones are
+    created with what La Bonne Boîte gives (name, activity).
+    """
+    count = 0
+    with conn.transaction(), conn.cursor() as cur:
+        for h in items:
+            if not h.siret:
+                continue
+            (company_id,) = cur.execute(
+                """
+                INSERT INTO companies (siren, name, naf_code) VALUES (%s, %s, %s)
+                ON CONFLICT (siren) DO UPDATE SET updated_at = now()
+                RETURNING id
+                """,
+                (h.siren, h.company_name, h.naf_code),
+            ).fetchone()
+            cur.execute(
+                """
+                INSERT INTO establishments (siret, company_id, postal_code, city, location)
+                VALUES (%(siret)s, %(company_id)s, %(postal_code)s, %(city)s,
+                        CASE WHEN %(lon)s::float8 IS NULL OR %(lat)s::float8 IS NULL THEN NULL
+                             ELSE ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography
+                        END)
+                ON CONFLICT (siret) DO UPDATE SET
+                    location = coalesce(establishments.location, EXCLUDED.location),
+                    city = coalesce(nullif(establishments.city, ''), EXCLUDED.city),
+                    postal_code = coalesce(nullif(establishments.postal_code, ''),
+                                           EXCLUDED.postal_code)
+                """,
+                {
+                    "siret": h.siret,
+                    "company_id": company_id,
+                    "postal_code": h.postal_code,
+                    "city": h.city,
+                    "lat": h.latitude,
+                    "lon": h.longitude,
+                },
+            )
+            cur.execute(
+                """
+                INSERT INTO hiring_potential (siret, rome, score, is_high_potential, accepts_email)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (siret, rome) DO UPDATE SET
+                    score = EXCLUDED.score, is_high_potential = EXCLUDED.is_high_potential,
+                    accepts_email = EXCLUDED.accepts_email, updated_at = now()
+                """,
+                (h.siret, h.rome, h.hiring_potential, h.is_high_potential, h.accepts_email),
+            )
+            count += 1
+    return count
+
+
+@dataclass(frozen=True)
+class LikelyEmployer:
+    siret: str
+    name: str
+    naf_code: str
+    city: str
+    distance_km: float
+    rome: str
+    score: float
+    is_high_potential: bool
+    accepts_email: bool
+
+
+def likely_employers(
+    conn: psycopg.Connection,
+    latitude: float,
+    longitude: float,
+    radius_km: float,
+    romes: Sequence[str] | None = None,
+    limit: int = 100,
+) -> list[LikelyEmployer]:
+    """Establishments in the radius ranked by hiring potential (best first)."""
+    rows = conn.execute(
+        """
+        WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p)
+        SELECT e.siret, c.name, coalesce(c.naf_code, ''), coalesce(e.city, ''),
+               ST_Distance(e.location, here.p) / 1000, h.rome, h.score, h.is_high_potential,
+               h.accepts_email
+        FROM hiring_potential h
+        JOIN establishments e ON e.siret = h.siret
+        JOIN companies c ON c.id = e.company_id, here
+        WHERE ST_DWithin(e.location, here.p, %(radius_m)s)
+          AND (%(romes)s::text[] IS NULL OR h.rome = ANY(%(romes)s::text[]))
+        ORDER BY h.score DESC
+        LIMIT %(limit)s
+        """,
+        {
+            "lat": latitude,
+            "lon": longitude,
+            "radius_m": radius_km * 1000,
+            "romes": list(romes) if romes else None,
+            "limit": limit,
+        },
+    ).fetchall()
+    return [LikelyEmployer(*row) for row in rows]

@@ -25,7 +25,8 @@ def conn():
         pytest.skip(f"PostgreSQL indisponible : {exc}")
     with db.connect(TEST_DATABASE_URL) as c:
         c.execute(
-            "DROP TABLE IF EXISTS company_contacts, ats_boards, offers, establishments, companies"
+            "DROP TABLE IF EXISTS hiring_potential, company_contacts, ats_boards, offers, "
+            "establishments, companies"
         )
         c.commit()
         db.init_schema(c)

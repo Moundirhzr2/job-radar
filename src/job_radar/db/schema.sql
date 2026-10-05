@@ -67,6 +67,17 @@ CREATE INDEX IF NOT EXISTS offers_location ON offers USING gist (location);
 CREATE INDEX IF NOT EXISTS offers_kinds ON offers USING gin (kinds);
 CREATE INDEX IF NOT EXISTS offers_embedding ON offers USING hnsw (embedding vector_cosine_ops);
 
+-- Potentiel d'embauche d'un établissement pour un métier (France Travail - La Bonne Boîte).
+CREATE TABLE IF NOT EXISTS hiring_potential (
+    siret              text NOT NULL REFERENCES establishments (siret) ON DELETE CASCADE,
+    rome               text NOT NULL,          -- code métier ROME
+    score              double precision NOT NULL,
+    is_high_potential  boolean NOT NULL DEFAULT false,
+    accepts_email      boolean NOT NULL DEFAULT false,  -- candidature spontanée par e-mail acceptée
+    updated_at         timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (siret, rome)
+);
+
 -- Les flux publics de logiciels de recrutement détectés sur les pages carrières.
 CREATE TABLE IF NOT EXISTS ats_boards (
     id            bigserial PRIMARY KEY,

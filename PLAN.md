@@ -66,7 +66,7 @@ Pour qui : les étudiants qui cherchent un **stage**, une **alternance**, un **e
 | Source | Apporte | Accès |
 |---|---|---|
 | France Travail – Offres d'emploi v2 | Offres (emploi, alternance, temps partiel), y compris celles de sites partenaires. Recherche par commune + rayon | Gratuit, compte francetravail.io, OAuth2 (client credentials), 10 appels/s |
-| France Travail – La Bonne Boîte | Entreprises classées par potentiel d'embauche pour un métier (ROME) ou une activité (NAF) et un lieu | Même compte francetravail.io |
+| France Travail – La Bonne Boîte | Entreprises classées par potentiel d'embauche pour un métier (ROME) autour d'un point ; indique si l'entreprise accepte les candidatures spontanées par e-mail, sans donner l'adresse | Même compte francetravail.io, autorisation `api_labonneboitev2 search`, 2 appels/s |
 | La bonne alternance | Offres d'alternance, entreprises qui recrutent en alternance, transmission de candidature au recruteur | Gratuit, usage non commercial |
 | API Recherche d'entreprises | Toutes les entreprises autour d'un point (`/near_point`, rayon ≤ 50 km), secteur, taille, dirigeants | Gratuit, sans clé, 7 requêtes/s |
 | API Géo (geo.api.gouv.fr) | Commune → coordonnées et code INSEE | Gratuit, sans clé |
@@ -120,7 +120,7 @@ mesurée avant qu'on fasse confiance à une réponse.
 | 2 | Lecture des sites carrières : JobPosting, flux ATS, sitemaps, robots.txt | Fait, testé sur données réelles |
 | 3 | Entreprises autour d'un point (annuaire officiel), dirigeants des petites entreprises | Fait |
 | 4 | Géolocalisation des offres, ligne de commande | Fait |
-| 5 | Offres France Travail (fait : 345 offres autour de Mulhouse) + La Bonne Boîte | La Bonne Boîte : accès à faire valider par France Travail |
+| 5 | Offres France Travail + entreprises qui recrutent (La Bonne Boîte) | Fait : 345 offres et 6 employeurs probables autour de Mulhouse |
 | 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | À faire (clé Anthropic + étiquettes) |
 | 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | À faire |
 | 8 | Application web avec la carte, suivi des candidatures | À faire |
@@ -154,6 +154,6 @@ fonctionnalité codée par lui avec accompagnement.
 
 - [x] Dépôt `job-radar` créé et relié à la session
 - [x] Réseau de l'environnement en accès Full
-- [ ] Application francetravail.io avec Offres d'emploi v2 et La Bonne Boîte
-- [ ] Clé API Anthropic avec plafond de dépenses
-- [ ] Clés enregistrées en variables d'environnement
+- [x] Application francetravail.io avec Offres d'emploi v2 et La Bonne Boîte
+- [x] Clé API Anthropic avec plafond de dépenses
+- [x] Clés enregistrées en variables d'environnement

@@ -26,6 +26,10 @@ même situation.
 
 - **Les entreprises autour de soi** : tous les employeurs qui ont un établissement dans le rayon
   choisi, depuis l'annuaire officiel des entreprises, avec leur activité et leur taille.
+- **Les entreprises qui recrutent sans publier d'offre** : classées par potentiel d'embauche
+  pour un métier (France Travail – La Bonne Boîte), avec l'indication des entreprises qui
+  acceptent les candidatures spontanées.
+- **Les offres France Travail** autour d'une commune : emplois, alternances, temps partiel.
 - **Les offres publiées sur les sites carrières des entreprises** : lecture des données
   structurées `JobPosting` des pages d'offres, des flux publics des logiciels de recrutement
   (Greenhouse, Lever, Recruitee) et des sitemaps que les sites publient pour les moteurs de
@@ -38,13 +42,16 @@ docker compose up -d --wait        # PostgreSQL 17 + PostGIS + pgvector
 uv sync
 
 uv run radar companies --town Mulhouse --radius 15 --naf 62,63   # employeurs du numérique
+uv run radar hiring --town Mulhouse --radius 30 --field data      # qui recrute, même sans offre
+uv run radar francetravail --town Mulhouse --radius 20 --kind apprenticeship
 uv run radar careers https://groupeoci.teamtailor.com/jobs       # offres d'un site carrières
 uv run radar feed recruitee amiparis                             # flux d'un logiciel de recrutement
 uv run radar offers --town Mulhouse --radius 30 --kind internship apprenticeship
 ```
 
-Premier essai sur données réelles : 64 offres lues sur les sites de trois entreprises, placées
-sur la carte et retrouvées autour de Mulhouse et de Paris.
+Essais sur données réelles autour de Mulhouse : 345 offres France Travail (dont 65 alternances),
+6 entreprises du numérique susceptibles de recruter, et les offres des sites carrières de trois
+entreprises.
 
 ## Les règles
 

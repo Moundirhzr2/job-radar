@@ -22,6 +22,7 @@ from .sources.careers.site import read_career_site
 from .sources.companies import HEADCOUNT_LABEL, CompanyDirectory
 from .sources.france_travail import CredentialsError, FranceTravail
 from .sources.geo import Geocoder, GeocodingUnavailable, find_towns, place
+from .sources.la_bonne_boite import ROME_FIELDS, LaBonneBoite
 
 DEFAULT_DATABASE_URL = "postgresql://radar:radar@localhost:5433/radar"
 KIND_LABELS = {
@@ -127,6 +128,28 @@ def cmd_francetravail(args) -> None:
     _store(offers, f"France Travail autour de {town.name} ({args.radius:g} km)")
 
 
+def cmd_hiring(args) -> None:
+    town = _town(args.town)
+    romes = ROME_FIELDS.get(args.field) or [r.strip() for r in args.field.split(",")]
+    lbb = LaBonneBoite()
+    conn = _connect()
+    try:
+        for rome in romes:
+            db.upsert_hiring(conn, lbb.search(rome, town.latitude, town.longitude, args.radius))
+    except CredentialsError as exc:
+        sys.exit(str(exc))
+    rows = db.likely_employers(conn, town.latitude, town.longitude, args.radius, romes)
+    print(
+        f"{len(rows)} entreprises susceptibles de recruter ({', '.join(romes)}) "
+        f"à moins de {args.radius:g} km de {town.name}, par potentiel d'embauche :\n"
+    )
+    for e in rows:
+        flags = " ★ fort potentiel" if e.is_high_potential else ""
+        flags += " · candidature spontanée par e-mail acceptée" if e.accepts_email else ""
+        print(f"{e.score:6.1f}  {e.name[:45]:45} {e.distance_km:5.1f} km  {e.city}{flags}")
+        print(f"{'':8}fiche : https://annuaire-entreprises.data.gouv.fr/etablissement/{e.siret}")
+
+
 def cmd_offers(args) -> None:
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else None
@@ -174,6 +197,16 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--keywords", default="", help="mots-clés, ex. data")
     p.add_argument("--max", type=int, default=1000, help="offres au plus par type")
     p.set_defaults(func=cmd_francetravail)
+
+    p = sub.add_parser("hiring", help="les entreprises qui recrutent, même sans offre publiée")
+    p.add_argument("--town", required=True)
+    p.add_argument("--radius", type=float, default=30)
+    p.add_argument(
+        "--field",
+        default="data",
+        help=f"domaine ({', '.join(ROME_FIELDS)}) ou codes ROME séparés par des virgules",
+    )
+    p.set_defaults(func=cmd_hiring)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)
