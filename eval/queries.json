@@ -1,6 +1,6 @@
 [
-  {"id": "data", "request": "alternance data analyst ou data engineer", "town": "Mulhouse", "radius_km": 30},
-  {"id": "dev", "request": "alternance développeur informatique", "town": "Mulhouse", "radius_km": 30},
-  {"id": "it", "request": "poste en informatique : support, réseaux ou développement", "town": "Mulhouse", "radius_km": 30},
-  {"id": "weekend", "request": "job étudiant le week-end compatible avec les cours", "town": "Mulhouse", "radius_km": 15}
+  {"id": "data", "label": "Alternance data", "request": "alternance data analyst ou data engineer", "town": "Mulhouse", "radius_km": 30},
+  {"id": "dev", "label": "Alternance dev", "request": "alternance développeur informatique", "town": "Mulhouse", "radius_km": 30},
+  {"id": "it", "label": "Informatique", "request": "poste en informatique : support, réseaux ou développement", "town": "Mulhouse", "radius_km": 30},
+  {"id": "weekend", "label": "Job week-end", "request": "job étudiant le week-end compatible avec les cours", "town": "Mulhouse", "radius_km": 15}
 ]

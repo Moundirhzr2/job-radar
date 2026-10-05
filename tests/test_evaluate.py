@@ -3,12 +3,14 @@ import math
 import pytest
 
 from job_radar.evaluate import (
+    EvalQuery,
     item_key,
     mrr_at,
     ndcg_at,
     precision_at,
     recall_at,
     score,
+    sheets,
     to_markdown,
 )
 
@@ -45,3 +47,28 @@ def test_score_averages_over_requests_with_relevant_offers():
     assert (b.mrr10, b.recall50) == (0.5, 0.5)
     table = to_markdown([a, b])
     assert "| A | 1.00 | 1.00 | 0.67 | 1.00 |" in table
+
+
+def test_sheets_are_blind_and_stable():
+    queries = [
+        EvalQuery("q", "alternance data", "Mulhouse", 30, "Data"),
+        EvalQuery("r", "x", "Colmar", 15),
+    ]
+    to_judge = [
+        {
+            "key": f"q__s__{i}",
+            "query_id": "q",
+            "request": "alternance data",
+            "title": str(i),
+            "found_by": ["hybride"],
+        }
+        for i in range(20)
+    ] + [{"key": "r__s__x", "query_id": "r", "request": "x", "title": "x", "found_by": []}]
+    out = sheets(queries, to_judge)
+    q = out["q"]
+    assert (q["label"], q["position"], out["r"]["label"]) == ("Data", 0, "r")
+    assert all(set(it) == {"key", "title"} for it in q["items"])  # no configuration names
+    order = [it["title"] for it in q["items"]]
+    assert sorted(order, key=int) == [str(i) for i in range(20)]
+    assert order != sorted(order, key=int)  # not in the order the methods ranked them
+    assert order == [it["title"] for it in sheets(queries, list(reversed(to_judge)))["q"]["items"]]

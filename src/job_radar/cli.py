@@ -247,7 +247,7 @@ def cmd_eval_pool(args) -> None:
     import json
     from pathlib import Path
 
-    from .evaluate import collect, pool
+    from .evaluate import collect, pool, sheets
 
     queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
     rankings, items = collect(
@@ -255,8 +255,12 @@ def cmd_eval_pool(args) -> None:
     )
     to_judge = pool(rankings, items, args.depth)
     Path(args.out).write_text(json.dumps(to_judge, ensure_ascii=False, indent=1) + "\n", "utf-8")
+    out = Path(args.sheets)
+    out.mkdir(parents=True, exist_ok=True)
+    for query_id, sheet in sheets(queries, to_judge).items():
+        (out / f"{query_id}.json").write_text(json.dumps(sheet, ensure_ascii=False), "utf-8")
     per_query = {q.id: sum(i["query_id"] == q.id for i in to_judge) for q in queries}
-    print(f"{len(to_judge)} offres à juger ({per_query}), écrites dans {args.out}")
+    print(f"{len(to_judge)} offres à juger ({per_query}), écrites dans {args.out} et {out}/")
 
 
 def cmd_eval_score(args) -> None:
@@ -373,6 +377,7 @@ def main(argv: list[str] | None = None) -> None:
         if name == "pool":
             p.add_argument("--depth", type=int, default=10)
             p.add_argument("--out", default="eval/pool.json")
+            p.add_argument("--sheets", default="eval/sheets", help="fiches à juger, en aveugle")
         else:
             p.add_argument("--labels", default="eval/labels.json")
 

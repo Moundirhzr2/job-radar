@@ -18,6 +18,7 @@ Method (standard in information retrieval):
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -44,6 +45,7 @@ class EvalQuery:
     request: str
     town: str
     radius_km: float
+    label: str = ""  # short name shown to the judge
 
 
 def load_queries(path: Path) -> list[EvalQuery]:
@@ -242,3 +244,26 @@ def pool(
         for ranking in per_query.values():
             keys.extend(ranking[:depth])
     return [items[k] for k in dict.fromkeys(keys)]
+
+
+def sheets(queries: Sequence[EvalQuery], to_judge: Sequence[dict]) -> dict[str, dict]:
+    """One judging sheet per request, made blind: no configuration names, and the offers in a
+    fixed pseudo-random order, so the judge cannot tell which method found which offer."""
+    hidden = {"found_by", "query_id", "request"}
+    out = {}
+    for position, q in enumerate(queries):
+        items = [
+            {k: v for k, v in it.items() if k not in hidden}
+            for it in to_judge
+            if it["query_id"] == q.id
+        ]
+        items.sort(key=lambda it: hashlib.sha256(it["key"].encode()).hexdigest())
+        out[q.id] = {
+            "label": q.label or q.id,
+            "request": q.request,
+            "town": q.town,
+            "radius_km": q.radius_km,
+            "position": position,
+            "items": items,
+        }
+    return out
