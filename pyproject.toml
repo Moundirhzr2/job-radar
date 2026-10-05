@@ -12,6 +12,9 @@ dependencies = [
     "pgvector>=0.4",
     "psycopg[binary]>=3.2",
     "python-dotenv>=1.0",
+    "fastembed>=0.8.1",
+    "anthropic>=1.11.0",
+    "pydantic>=2.13.5",
 ]
 
 [project.scripts]

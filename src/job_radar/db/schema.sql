@@ -4,6 +4,18 @@
 
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+-- Recherche plein texte française insensible aux accents : « developpeur » trouve « développeur ».
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_ts_config WHERE cfgname = 'fr_unaccent') THEN
+        CREATE TEXT SEARCH CONFIGURATION fr_unaccent (COPY = french);
+        ALTER TEXT SEARCH CONFIGURATION fr_unaccent
+            ALTER MAPPING FOR hword, hword_part, word WITH unaccent, french_stem;
+    END IF;
+END
+$$;
 
 -- Une entreprise (unité légale). Le SIREN vient du registre public quand il est connu.
 CREATE TABLE IF NOT EXISTS companies (
@@ -59,6 +71,12 @@ CREATE TABLE IF NOT EXISTS offers (
     last_seen        timestamptz NOT NULL DEFAULT now(),  -- l'offre a disparu si last_seen stagne
     content_hash     text NOT NULL,
     embedding        vector(1024),
+    -- Le titre pèse plus que l'entreprise, qui pèse plus que la description.
+    tsv              tsvector GENERATED ALWAYS AS (
+                         setweight(to_tsvector('fr_unaccent'::regconfig, title), 'A') ||
+                         setweight(to_tsvector('fr_unaccent'::regconfig, company_name), 'B') ||
+                         setweight(to_tsvector('fr_unaccent'::regconfig, description), 'C')
+                     ) STORED,
     UNIQUE (source, source_id),
     CHECK (kinds <@ ARRAY['internship', 'apprenticeship', 'student_job', 'job']
            AND cardinality(kinds) > 0)
@@ -66,6 +84,7 @@ CREATE TABLE IF NOT EXISTS offers (
 CREATE INDEX IF NOT EXISTS offers_location ON offers USING gist (location);
 CREATE INDEX IF NOT EXISTS offers_kinds ON offers USING gin (kinds);
 CREATE INDEX IF NOT EXISTS offers_embedding ON offers USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS offers_tsv ON offers USING gin (tsv);
 
 -- Potentiel d'embauche d'un établissement pour un métier (France Travail - La Bonne Boîte).
 CREATE TABLE IF NOT EXISTS hiring_potential (

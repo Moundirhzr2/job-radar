@@ -150,6 +150,24 @@ def cmd_hiring(args) -> None:
         print(f"{'':8}fiche : https://annuaire-entreprises.data.gouv.fr/etablissement/{e.siret}")
 
 
+def cmd_index(args) -> None:
+    from .embed import Embedder, offer_text
+
+    conn = _connect()
+    todo = db.offers_to_embed(conn)
+    if not todo:
+        print("Toutes les offres sont déjà indexées.")
+        return
+    embedder = Embedder()
+    done = 0
+    for start in range(0, len(todo), 64):
+        batch = todo[start : start + 64]
+        vectors = embedder.passages([offer_text(t, c, city, k, d) for _, t, c, city, k, d in batch])
+        db.set_embeddings(conn, [(row[0], v) for row, v in zip(batch, vectors, strict=True)])
+        done += len(batch)
+        print(f"  {done}/{len(todo)} offres indexées")
+
+
 def cmd_offers(args) -> None:
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else None
@@ -207,6 +225,10 @@ def main(argv: list[str] | None = None) -> None:
         help=f"domaine ({', '.join(ROME_FIELDS)}) ou codes ROME séparés par des virgules",
     )
     p.set_defaults(func=cmd_hiring)
+
+    sub.add_parser(
+        "index", help="calcule les vecteurs des offres nouvelles ou modifiées"
+    ).set_defaults(func=cmd_index)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)
