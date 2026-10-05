@@ -221,6 +221,65 @@ def cmd_search(args) -> None:
         print(f"      {c.company or '?'} — {c.city} — {c.url}")
 
 
+def _eval_setup(args):
+    from pathlib import Path
+
+    from .embed import Embedder
+    from .evaluate import CONFIGS, CachedRewriter, load_queries
+    from .rerank import Reranker
+    from .rewrite import rewrite
+
+    queries = load_queries(Path(args.queries))
+    towns = {name: _town(name) for name in {q.town for q in queries}}
+    profile = Path(args.profile).read_text(encoding="utf-8") if args.profile else ""
+    rewriter = CachedRewriter(Path(args.rewrites), rewrite)
+    configs = list(CONFIGS)
+    try:
+        for q in queries:
+            rewriter(q.request, profile)
+    except Exception as exc:  # no credit, no key, network: evaluate without rewriting
+        print(f"Réécriture indisponible ({type(exc).__name__}) : configurations sans réécriture.")
+        configs = [c for c in configs if not CONFIGS[c][1]]
+    return queries, towns, profile, rewriter, configs, Embedder(), Reranker()
+
+
+def cmd_eval_pool(args) -> None:
+    import json
+    from pathlib import Path
+
+    from .evaluate import collect, pool
+
+    queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
+    rankings, items = collect(
+        _connect(), queries, towns, embedder, reranker, rewriter, profile, configs, args.depth
+    )
+    to_judge = pool(rankings, items, args.depth)
+    Path(args.out).write_text(json.dumps(to_judge, ensure_ascii=False, indent=1) + "\n", "utf-8")
+    per_query = {q.id: sum(i["query_id"] == q.id for i in to_judge) for q in queries}
+    print(f"{len(to_judge)} offres à juger ({per_query}), écrites dans {args.out}")
+
+
+def cmd_eval_score(args) -> None:
+    import json
+    from pathlib import Path
+
+    from .evaluate import collect, score, to_markdown
+
+    queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
+    labels = json.loads(Path(args.labels).read_text(encoding="utf-8"))
+    rankings, _ = collect(
+        _connect(), queries, towns, embedder, reranker, rewriter, profile, configs
+    )
+    unjudged = {k for per_q in rankings.values() for r in per_q.values() for k in r[:10]} - set(
+        labels
+    )
+    print(to_markdown(score(rankings, labels)))
+    if unjudged:
+        print(
+            f"\n{len(unjudged)} offres du top 10 ne sont pas jugées : relancer « radar eval pool »."
+        )
+
+
 def cmd_offers(args) -> None:
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else None
@@ -296,6 +355,26 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--no-rerank", dest="rerank", action="store_false")
     p.add_argument("-n", type=int, default=15, help="nombre de résultats")
     p.set_defaults(func=cmd_search)
+
+    ev = sub.add_parser("eval", help="mesure la qualité de la recherche").add_subparsers(
+        dest="eval_command", required=True
+    )
+    for name, func, help_ in (
+        ("pool", cmd_eval_pool, "réunit les offres à juger"),
+        ("score", cmd_eval_score, "calcule nDCG, MRR, précision et rappel par configuration"),
+    ):
+        p = ev.add_parser(name, help=help_)
+        p.add_argument("--queries", default="eval/queries.json")
+        p.add_argument("--rewrites", default="eval/rewrites.json")
+        p.add_argument(
+            "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
+        )
+        p.set_defaults(func=func)
+        if name == "pool":
+            p.add_argument("--depth", type=int, default=10)
+            p.add_argument("--out", default="eval/pool.json")
+        else:
+            p.add_argument("--labels", default="eval/labels.json")
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)
