@@ -112,3 +112,20 @@ def test_refused_keys_are_reported(keys):
     tokens = TokenProvider(client=httpx.Client(transport=httpx.MockTransport(handler)))
     with pytest.raises(CredentialsError, match="Client authentication failed"):
         tokens()
+
+
+def test_token_request_survives_a_dropped_connection(keys):
+    attempts = []
+
+    def handler(request):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise httpx.ConnectError("Connection reset by peer")
+        if len(attempts) == 2:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"access_token": "t", "expires_in": 1499})
+
+    waits = []
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    assert TokenProvider(client=client, sleep=waits.append)() == "t"
+    assert waits == [1, 2]

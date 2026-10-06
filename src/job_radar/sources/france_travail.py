@@ -67,21 +67,35 @@ class TokenProvider:
     scope: str = OFFERS_SCOPE
     client: httpx.Client = field(default_factory=default_client)
     clock: Callable[[], float] = time.monotonic
+    sleep: Callable[[float], None] = time.sleep
+    retries: int = 4
     _token: str = ""
     _expires: float = 0.0
+
+    def _post(self, data: dict) -> httpx.Response:
+        """The token request, retried like every other call when the connection drops."""
+        for attempt in range(self.retries + 1):
+            try:
+                resp = self.client.post(TOKEN_URL, params={"realm": "/partenaire"}, data=data)
+            except httpx.TransportError:
+                if attempt == self.retries:
+                    raise
+            else:
+                if resp.status_code < 500 or attempt == self.retries:
+                    return resp
+            self.sleep(2**attempt)
+        raise AssertionError("unreachable")
 
     def __call__(self) -> str:
         if not self._token or self.clock() > self._expires - 60:
             client_id, secret = read_credentials()
-            resp = self.client.post(
-                TOKEN_URL,
-                params={"realm": "/partenaire"},
-                data={
+            resp = self._post(
+                {
                     "grant_type": "client_credentials",
                     "client_id": client_id,
                     "client_secret": secret,
                     "scope": self.scope,
-                },
+                }
             )
             if resp.status_code != 200:
                 raise CredentialsError(
