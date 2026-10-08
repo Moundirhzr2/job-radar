@@ -222,6 +222,13 @@ class CachedRewriter:
         return RewrittenQuery(**self.cache[request])
 
 
+@dataclass
+class Collected:
+    rankings: dict[str, dict[str, list[str]]]  # config -> request -> ranked item keys
+    items: dict[str, dict]  # what each ranked offer looks like
+    rerank: dict[str, float]  # item key -> best re-ranking score it received
+
+
 def collect(
     conn,
     queries: Sequence[EvalQuery],
@@ -232,10 +239,11 @@ def collect(
     profile: str,
     configs: Sequence[str],
     depth: int = 50,
-) -> tuple[dict[str, dict[str, list[str]]], dict[str, dict]]:
+) -> Collected:
     """Rankings per configuration and request, and what each ranked offer looks like."""
     rankings: dict[str, dict[str, list[str]]] = {c: {} for c in configs}
     items: dict[str, dict] = {}
+    rerank: dict[str, float] = {}
     for q in queries:
         for name in configs:
             res = run_config(
@@ -244,6 +252,8 @@ def collect(
             keys = ranked_keys(conn, q, res)
             rankings[name][q.id] = keys
             for key, c in zip(keys, res.candidates, strict=True):
+                if "rerank" in c.extra:
+                    rerank[key] = max(rerank.get(key, 0.0), c.extra["rerank"])
                 items.setdefault(
                     key,
                     {
@@ -260,7 +270,34 @@ def collect(
                         "found_by": [],
                     },
                 )["found_by"].append(name)
-    return rankings, items
+    return Collected(rankings, items, rerank)
+
+
+def calibration(
+    rerank: dict[str, float],
+    labels: dict[str, str],
+    thresholds: Sequence[float] = (0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5),
+) -> tuple[float | None, float | None, list[tuple[float, float, float, int]]]:
+    """What the re-ranking score says about relevance, on the judged offers.
+
+    Returns the lowest score of a relevant offer, the highest score reached by an offer of a
+    request that has no relevant offer at all, and for each threshold t: the precision and
+    recall of "score >= t" as a relevance signal and how many offers it keeps. A confidence
+    threshold between the first two values hides no relevant offer and still lets the radar
+    say "nothing convincing" for a request with nothing to find.
+    """
+    judged = {k: s for k, s in rerank.items() if labels.get(k) in ("yes", "no")}
+    relevant = [s for k, s in judged.items() if labels[k] == "yes"]
+    answered = {k.split("__")[0] for k, v in labels.items() if v == "yes"}
+    empty = [s for k, s in judged.items() if k.split("__")[0] not in answered]
+    rows = []
+    for t in thresholds:
+        kept = [k for k, s in judged.items() if s >= t]
+        tp = sum(labels[k] == "yes" for k in kept)
+        rows.append(
+            (t, tp / len(kept) if kept else 0.0, tp / len(relevant) if relevant else 0.0, len(kept))
+        )
+    return (min(relevant) if relevant else None), (max(empty) if empty else None), rows
 
 
 def pool(

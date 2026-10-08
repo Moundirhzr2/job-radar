@@ -17,8 +17,10 @@ from .rewrite import RewrittenQuery
 from .search import Candidate, Mode, SearchQuery, keywords_of, search
 
 # Below this re-ranking score for the best candidate, the radar says it found nothing
-# convincing instead of presenting weak matches as answers. To tune on the evaluation set.
-CONFIDENCE = 0.5
+# convincing instead of presenting weak matches as answers. Set on the evaluation set
+# (radar eval score): the relevant offer with the lowest score got 0.23, and the best offer
+# for the request with nothing to find (a data apprenticeship within 30 km) got 0.17.
+CONFIDENCE = 0.2
 
 
 @dataclass

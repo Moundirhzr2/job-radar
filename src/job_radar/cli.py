@@ -243,7 +243,11 @@ def cmd_search(args) -> None:
             f"Pas assez d'offres pertinentes pour cette demande{best}. "
             "Élargir le rayon ou la demande.\n"
         )
+    weak_shown = False
     for i, c in enumerate(results.candidates, 1):
+        if results.confident and c.extra.get("rerank", 1.0) < CONFIDENCE and not weak_shown:
+            print(f"\n— Moins convaincantes (score < {CONFIDENCE}) —")
+            weak_shown = True
         score = f"{c.extra['rerank']:.2f}" if "rerank" in c.extra else f"{c.score:.3f}"
         what = ", ".join(KIND_LABELS[k] for k in c.kinds) + _hours(c.weekly_hours)
         print(f"{i:2}. [{score}] {c.title[:70]}  ({what}, {c.distance_km:.0f} km)")
@@ -279,10 +283,10 @@ def cmd_eval_pool(args) -> None:
     from .evaluate import collect, pool, sheets
 
     queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
-    rankings, items = collect(
+    found = collect(
         _connect(), queries, towns, embedder, reranker, rewriter, profile, configs, args.depth
     )
-    to_judge = pool(rankings, items, args.depth)
+    to_judge = pool(found.rankings, found.items, args.depth)
     Path(args.out).write_text(json.dumps(to_judge, ensure_ascii=False, indent=1) + "\n", "utf-8")
     out = Path(args.sheets)
     out.mkdir(parents=True, exist_ok=True)
@@ -295,17 +299,27 @@ def cmd_eval_pool(args) -> None:
 def cmd_eval_score(args) -> None:
     from pathlib import Path
 
-    from .evaluate import collect, load_labels, score, to_markdown
+    from .evaluate import calibration, collect, load_labels, score, to_markdown
+    from .pipeline import CONFIDENCE
 
     queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
     labels = load_labels(Path(args.labels))
-    rankings, _ = collect(
-        _connect(), queries, towns, embedder, reranker, rewriter, profile, configs
-    )
+    found = collect(_connect(), queries, towns, embedder, reranker, rewriter, profile, configs)
+    rankings = found.rankings
     unjudged = {k for per_q in rankings.values() for r in per_q.values() for k in r[:10]} - set(
         labels
     )
     print(to_markdown(score(rankings, labels)))
+    lowest, empty, rows = calibration(found.rerank, labels)
+    if rows:
+        print(f"\nSeuil de confiance (re-ranking), actuellement {CONFIDENCE} :")
+        if lowest is not None:
+            print(f"  offre pertinente la moins bien notée : {lowest:.2f}")
+        if empty is not None:
+            print(f"  meilleur score d'une recherche sans offre pertinente : {empty:.2f}")
+        print("  seuil  précision  rappel  offres gardées")
+        for t, precision, recall, kept in rows:
+            print(f"  {t:5.2f}  {precision:9.2f}  {recall:6.2f}  {kept:14}")
     if unjudged:
         print(
             f"\n{len(unjudged)} offres du top 10 ne sont pas jugées : relancer « radar eval pool »."

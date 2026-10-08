@@ -5,6 +5,7 @@ import pytest
 
 from job_radar.evaluate import (
     EvalQuery,
+    calibration,
     import_labels,
     item_key,
     load_labels,
@@ -91,3 +92,11 @@ def test_judgments_keep_who_judged_and_why(tmp_path):
     assert load_labels(path) == {"q__s__a": "yes", "q__s__b": "no"}
     path.write_text('{"q__s__a": "unsure"}')  # the plain format still reads
     assert load_labels(path) == {"q__s__a": "unsure"}
+
+
+def test_calibration_brackets_a_safe_confidence_threshold():
+    labels = {"q__s__a": "yes", "q__s__b": "no", "q__s__c": "yes", "e__s__x": "no"}
+    rerank = {"q__s__a": 0.6, "q__s__b": 0.3, "q__s__c": 0.25, "e__s__x": 0.17, "q__s__z": 0.9}
+    lowest, empty, rows = calibration(rerank, labels, thresholds=(0.2, 0.5))
+    assert (lowest, empty) == (0.25, 0.17)  # "e" has nothing relevant: its best is 0.17
+    assert rows == [(0.2, 2 / 3, 1.0, 3), (0.5, 1.0, 0.5, 1)]  # unjudged "z" is ignored
