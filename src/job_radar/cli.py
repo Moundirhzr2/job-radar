@@ -247,7 +247,7 @@ def cmd_search(args) -> None:
         score = f"{c.extra['rerank']:.2f}" if "rerank" in c.extra else f"{c.score:.3f}"
         what = ", ".join(KIND_LABELS[k] for k in c.kinds) + _hours(c.weekly_hours)
         print(f"{i:2}. [{score}] {c.title[:70]}  ({what}, {c.distance_km:.0f} km)")
-        print(f"      {c.company or '?'} — {c.city} — {c.url}")
+        print(f"      #{c.id} — {c.company or '?'} — {c.city} — {c.url}")
 
 
 def _eval_setup(args):
@@ -312,6 +312,67 @@ def cmd_eval_score(args) -> None:
         )
 
 
+LEVELS = {"required": "exigé", "nice_to_have": "un plus"}
+
+
+def cmd_fit(args) -> None:
+    import hashlib
+    from pathlib import Path
+
+    from .fit import DEFAULT_MODEL, Fit, analyse, check, offer_text
+    from .sources.careers.fetch import PoliteFetcher
+
+    if not args.profile or not Path(args.profile).exists():
+        sys.exit("Il faut ton profil (ton CV en texte) dans data/profile.md, ou --profile.")
+    profile = Path(args.profile).read_text(encoding="utf-8")
+    conn = _connect()
+    offer = db.get_offer(conn, args.offer)
+    if offer is None:
+        sys.exit(f"Offre introuvable : {args.offer} (numéro affiché par « radar search »).")
+    if offer.source != "france_travail" and not PoliteFetcher().allows_ai_input(offer.url):
+        sys.exit("Ce site demande que ses pages ne servent pas d'entrée à une IA : pas d'analyse.")
+    text = offer_text(
+        offer.title, offer.company, offer.city, offer.kinds, offer.weekly_hours, offer.description
+    )
+    profile_hash = hashlib.sha256(profile.encode()).hexdigest()
+    cached = None if args.again else db.get_fit(conn, offer, profile_hash, DEFAULT_MODEL)
+    if cached:
+        fit = check(Fit(**cached), text, profile)
+    else:
+        fit = analyse(text, profile)
+        db.save_fit(conn, offer, profile_hash, DEFAULT_MODEL, fit.model_dump())
+
+    print(f"{offer.title} — {offer.company or '?'} — {offer.city}  (#{offer.id})")
+    print(f"{offer.url}\n")
+    print(fit.summary + "\n")
+    groups = (
+        ("covered", "Ce que tu as déjà", "✓"),
+        ("to_confirm", "À confirmer : ajoute-le à ton CV seulement si c'est vrai", "?"),
+        ("missing", "Ce qui te manque", "✗"),
+    )
+    for status, heading, mark in groups:
+        items = [r for r in fit.requirements if r.status == status]
+        if not items:
+            continue
+        print(f"{heading} ({len(items)})")
+        for r in items:
+            quote = f"« {r.evidence} »" + ("" if r.evidence_found else " (citation non retrouvée)")
+            print(f"  {mark} {r.skill} [{LEVELS[r.level]}] — offre : {quote}")
+            if r.profile_evidence:
+                print(f"      ton profil : « {r.profile_evidence} »")
+            if r.suggestion:
+                print(f"      si c'est vrai, ajoute : « {r.suggestion} »")
+            if r.note:
+                print(f"      {r.note}")
+        print()
+    for i, p in enumerate(fit.projects, 1):
+        print(f"Mini-projet {i} — {p.skill} : {p.title} ({p.duration})")
+        print(f"  {p.goal}")
+        for step in p.steps:
+            print(f"   - {step}")
+        print(f"  Ce que ça montre : {p.shows}\n")
+
+
 def cmd_eval_import(args) -> None:
     import json
     from collections import Counter
@@ -336,7 +397,7 @@ def cmd_offers(args) -> None:
         approx = "≈" if o.precision == "town" else " "
         what = ", ".join(KIND_LABELS[k] for k in o.kinds) + _hours(o.weekly_hours)
         print(f"{approx}{o.distance_km:5.1f} km  [{what}] {o.title[:60]}")
-        print(f"{'':10}{o.company or '?'} — {o.city} — {o.url}")
+        print(f"{'':10}#{o.id} — {o.company or '?'} — {o.city} — {o.url}")
         if o.contact:
             print(f"{'':10}contact publié : {o.contact[:120]}")
 
@@ -431,6 +492,16 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("directory", help="un fichier JSON {label, by?, note?} par offre")
     p.add_argument("--out", default="eval/labels.json")
     p.set_defaults(func=cmd_eval_import)
+
+    p = sub.add_parser(
+        "fit", help="ton profil face à une offre : acquis, à confirmer, manques, mini-projets"
+    )
+    p.add_argument("offer", help="numéro de l'offre (#1234, affiché par radar search) ou URL")
+    p.add_argument(
+        "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
+    )
+    p.add_argument("--again", action="store_true", help="refait l'analyse au lieu du cache")
+    p.set_defaults(func=cmd_fit)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)

@@ -10,6 +10,7 @@ from importlib.resources import files
 
 import psycopg
 from pgvector.psycopg import register_vector
+from psycopg.types.json import Jsonb
 
 from ..models import Kind, Offer
 from ..sources.companies import Company
@@ -148,6 +149,55 @@ def upsert_offers(conn: psycopg.Connection, offers: Iterable[Offer]) -> LoadRepo
     with conn.transaction(), conn.cursor() as cur:
         cur.executemany(_UPSERT, params)
     return report
+
+
+@dataclass(frozen=True)
+class StoredOffer:
+    id: int
+    source: str
+    url: str
+    title: str
+    company: str
+    city: str
+    kinds: list[str]
+    weekly_hours: float | None
+    description: str
+    content_hash: str
+    closed: bool
+
+
+def get_offer(conn: psycopg.Connection, ref: str) -> StoredOffer | None:
+    """An offer by its radar number ("1234" or "#1234") or by its URL."""
+    ref = ref.strip().lstrip("#")
+    by_id = ref.isdigit()
+    row = conn.execute(
+        "SELECT id, source, url, title, company_name, city, kinds, weekly_hours, description,"
+        " content_hash, closed_at IS NOT NULL FROM offers"
+        + (" WHERE id = %s" if by_id else " WHERE url = %s ORDER BY closed_at NULLS FIRST LIMIT 1"),
+        (int(ref) if by_id else ref,),
+    ).fetchone()
+    return StoredOffer(*row) if row else None
+
+
+def get_fit(
+    conn: psycopg.Connection, offer: StoredOffer, profile_hash: str, model: str
+) -> dict | None:
+    row = conn.execute(
+        "SELECT result FROM offer_fits WHERE offer_id = %s AND offer_hash = %s"
+        " AND profile_hash = %s AND model = %s",
+        (offer.id, offer.content_hash, profile_hash, model),
+    ).fetchone()
+    return row[0] if row else None
+
+
+def save_fit(
+    conn: psycopg.Connection, offer: StoredOffer, profile_hash: str, model: str, result: dict
+) -> None:
+    conn.execute(
+        "INSERT INTO offer_fits (offer_id, offer_hash, profile_hash, model, result)"
+        " VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+        (offer.id, offer.content_hash, profile_hash, model, Jsonb(result)),
+    )
 
 
 def open_offer_ids(conn: psycopg.Connection, source: str) -> list[str]:

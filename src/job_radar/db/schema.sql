@@ -91,6 +91,19 @@ CREATE INDEX IF NOT EXISTS offers_kinds ON offers USING gin (kinds);
 CREATE INDEX IF NOT EXISTS offers_embedding ON offers USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS offers_tsv ON offers USING gin (tsv);
 
+-- Adéquation profil / offre calculée par Claude, gardée pour ne pas la payer deux fois. Elle
+-- vaut pour une version de l'offre et une version du profil : le profil lui-même n'est jamais
+-- stocké ici, seulement son empreinte.
+CREATE TABLE IF NOT EXISTS offer_fits (
+    offer_id      bigint NOT NULL REFERENCES offers (id) ON DELETE CASCADE,
+    offer_hash    text NOT NULL,
+    profile_hash  text NOT NULL,
+    model         text NOT NULL,
+    result        jsonb NOT NULL,
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (offer_id, offer_hash, profile_hash, model)
+);
+
 -- Potentiel d'embauche d'un établissement pour un métier (France Travail - La Bonne Boîte).
 CREATE TABLE IF NOT EXISTS hiring_potential (
     siret              text NOT NULL REFERENCES establishments (siret) ON DELETE CASCADE,

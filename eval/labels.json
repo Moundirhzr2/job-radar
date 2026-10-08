@@ -34,8 +34,7 @@
  },
  "alternance-data__france_travail__214QMSC": {
   "label": "no",
-  "by": "claude",
-  "note": "pas une alternance data"
+  "by": "moundir"
  },
  "alternance-data__france_travail__4506774": {
   "label": "no",
@@ -373,23 +372,21 @@
   "by": "moundir"
  },
  "weekend__france_travail__213BVDR": {
-  "label": "no",
-  "by": "claude",
-  "note": "24 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__213HKHF": {
-  "label": "no",
+  "label": "yes",
   "by": "claude",
-  "note": "25 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "note": "temps partiel de 20 à 25 h par semaine (26 h au plus)"
  },
  "weekend__france_travail__213KGWN": {
   "label": "yes",
   "by": "moundir"
  },
  "weekend__france_travail__213NMMG": {
-  "label": "no",
-  "by": "claude",
-  "note": "24 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__213NTJL": {
   "label": "yes",
@@ -397,9 +394,8 @@
   "note": "temps partiel, 17 h 30 par semaine"
  },
  "weekend__france_travail__213WGGK": {
-  "label": "no",
-  "by": "claude",
-  "note": "24 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__213YTRS": {
   "label": "yes",
@@ -411,43 +407,38 @@
   "note": "34 h 12 par semaine : plus de 22 h, pas compatible avec les cours"
  },
  "weekend__france_travail__214HLGV": {
-  "label": "no",
-  "by": "claude",
-  "note": "28 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__214JWMR": {
   "label": "no",
   "by": "claude",
-  "note": "26 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "note": "26 h par semaine, mais du lundi au vendredi (sauf mercredi) de 8 h à 15 h : ni le week-end, ni compatible avec les cours"
  },
  "weekend__france_travail__214KHDN": {
-  "label": "no",
-  "by": "claude",
-  "note": "24 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__214KYVM": {
-  "label": "no",
-  "by": "claude",
-  "note": "24 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__214MQGJ": {
   "label": "yes",
   "by": "moundir"
  },
  "weekend__france_travail__214PNDG": {
-  "label": "no",
+  "label": "yes",
   "by": "claude",
-  "note": "25 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "note": "mi-temps de 20 à 25 h, travail le week-end"
  },
  "weekend__france_travail__214PZFG": {
-  "label": "no",
-  "by": "claude",
-  "note": "30 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__214TRVZ": {
-  "label": "no",
-  "by": "claude",
-  "note": "24 h par semaine : plus de 22 h, pas compatible avec les cours"
+  "label": "yes",
+  "by": "moundir"
  },
  "weekend__france_travail__214VJSJ": {
   "label": "no",
