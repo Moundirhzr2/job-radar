@@ -329,11 +329,11 @@ def cmd_eval_score(args) -> None:
 LEVELS = {"required": "exigé", "nice_to_have": "un plus"}
 
 
-def cmd_fit(args) -> None:
-    import hashlib
+def _offer_and_profile(args):
+    """The stored offer, its text for Claude, and the profile; or exit with the reason."""
     from pathlib import Path
 
-    from .fit import DEFAULT_MODEL, Fit, analyse, check, offer_text
+    from .fit import offer_text
     from .sources.careers.fetch import PoliteFetcher
 
     if not args.profile or not Path(args.profile).exists():
@@ -348,6 +348,15 @@ def cmd_fit(args) -> None:
     text = offer_text(
         offer.title, offer.company, offer.city, offer.kinds, offer.weekly_hours, offer.description
     )
+    return conn, offer, text, profile
+
+
+def cmd_fit(args) -> None:
+    import hashlib
+
+    from .fit import DEFAULT_MODEL, Fit, analyse, check
+
+    conn, offer, text, profile = _offer_and_profile(args)
     profile_hash = hashlib.sha256(profile.encode()).hexdigest()
     cached = None if args.again else db.get_fit(conn, offer, profile_hash, DEFAULT_MODEL)
     if cached:
@@ -385,6 +394,28 @@ def cmd_fit(args) -> None:
         for step in p.steps:
             print(f"   - {step}")
         print(f"  Ce que ça montre : {p.shows}\n")
+
+
+def cmd_draft(args) -> None:
+    from .draft import write
+
+    _, offer, text, profile = _offer_and_profile(args)
+    if offer.closed:
+        sys.exit("Cette offre n'est plus en ligne.")
+    draft = write(text, offer.contact, profile)
+    print("Brouillon à relire, modifier et envoyer toi-même : rien n'est envoyé.\n")
+    print(f"Offre : {offer.title} — {offer.company or '?'} (#{offer.id})")
+    if offer.contact:
+        print(f"Contact publié dans l'offre : {offer.contact}")
+    print(f"Lien de l'offre : {offer.url}\n")
+    print(f"Objet : {draft.subject}\n")
+    print(draft.body + "\n")
+    print("Ce que le message dit de toi :")
+    for fact in draft.facts:
+        if fact.found:
+            print(f"  ✓ {fact.claim} — ton profil : « {fact.profile_quote} »")
+        else:
+            print(f"  ⚠ {fact.claim} — introuvable dans ton profil : vérifie avant d'envoyer")
 
 
 def cmd_eval_import(args) -> None:
@@ -516,6 +547,13 @@ def main(argv: list[str] | None = None) -> None:
     )
     p.add_argument("--again", action="store_true", help="refait l'analyse au lieu du cache")
     p.set_defaults(func=cmd_fit)
+
+    p = sub.add_parser("draft", help="un brouillon de message au recruteur, à envoyer toi-même")
+    p.add_argument("offer", help="numéro de l'offre (#1234) ou URL")
+    p.add_argument(
+        "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
+    )
+    p.set_defaults(func=cmd_draft)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)

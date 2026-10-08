@@ -164,6 +164,7 @@ class StoredOffer:
     description: str
     content_hash: str
     closed: bool
+    contact: str = ""
 
 
 def get_offer(conn: psycopg.Connection, ref: str) -> StoredOffer | None:
@@ -172,7 +173,7 @@ def get_offer(conn: psycopg.Connection, ref: str) -> StoredOffer | None:
     by_id = ref.isdigit()
     row = conn.execute(
         "SELECT id, source, url, title, company_name, city, kinds, weekly_hours, description,"
-        " content_hash, closed_at IS NOT NULL FROM offers"
+        " content_hash, closed_at IS NOT NULL, contact FROM offers"
         + (" WHERE id = %s" if by_id else " WHERE url = %s ORDER BY closed_at NULLS FIRST LIMIT 1"),
         (int(ref) if by_id else ref,),
     ).fetchone()

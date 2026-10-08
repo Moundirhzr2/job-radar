@@ -120,9 +120,9 @@ mesurée avant qu'on fasse confiance à une réponse.
 | 2 | Lecture des sites carrières : JobPosting, flux ATS, sitemaps, robots.txt | Fait, testé sur données réelles |
 | 3 | Entreprises autour d'un point (annuaire officiel), dirigeants des petites entreprises | Fait |
 | 4 | Géolocalisation des offres, ligne de commande | Fait |
-| 5 | Offres France Travail + entreprises qui recrutent (La Bonne Boîte) | Fait : 345 offres et 6 employeurs probables autour de Mulhouse |
+| 5 | Offres France Travail + entreprises qui recrutent (La Bonne Boîte) | Fait : 3 681 offres (dont 514 alternances à moins de 100 km) et 6 employeurs probables autour de Mulhouse ; heures par semaine, offres retirées |
 | 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | À faire (clé Anthropic + étiquettes) |
-| 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | À faire |
+| 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | En partie : `radar fit` (acquis, à confirmer, manques, mini-projets) et `radar draft` (brouillon au contact publié, faits vérifiés) ; fiche entreprise à faire |
 | 8 | Application web avec la carte, suivi des candidatures | À faire |
 | 9 | Démo en ligne, mesures, ligne de CV | À faire |
 
@@ -132,6 +132,8 @@ avec l'annuaire des entreprises, qui indique les organismes de formation.
 
 À traiter : trouver le site carrières d'une entreprise à partir de l'annuaire (qui ne donne pas
 de site web) : Wikidata (données ouvertes, par SIREN), offres France Travail, recherche web.
+Piste repérée : le contact publié dans les offres France Travail pointe souvent vers le logiciel
+de recrutement de l'entreprise (BIHR : `bihr.teamtailor.com`), que le radar sait déjà lire.
 
 ## Ce que Moundir fait lui-même
 
@@ -149,6 +151,14 @@ fonctionnalité codée par lui avec accompagnement.
 - Modèle Claude par défaut : `claude-opus-5-5`, configurable.
 - Le moteur du projet précédent (dépôt `Rag` : recherche hybride pgvector + plein texte, RRF,
   citations, évaluation) est réutilisé.
+- Job étudiant (règle de Moundir) : 26 h par semaine au plus. Quand l'offre donne une fourchette
+  ou des heures négociables, la valeur la plus basse compte. « Temps partiel » seul ne décide que
+  si les heures ne sont pas publiées (France Travail appelle « temps partiel » un contrat de
+  34 h 12).
+- « Data » (définition de Moundir) : bases de données, data analyst, data engineer, BI, big data.
+- Étiquettes d'évaluation : jugées par Moundir sur une page en aveugle. Claude juge les offres
+  nouvelles et ne corrige que des « pertinente » clairement hors sujet, toujours avec la raison,
+  visible sur la page ; Moundir garde le dernier mot. `eval/labels.json` garde qui a jugé quoi.
 
 ## Prérequis
 
