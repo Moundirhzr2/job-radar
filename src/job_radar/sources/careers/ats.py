@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from ...models import Location, Offer, classify
+from ...models import Location, Offer, classify, weekly_hours
 from .jsonld import html_to_text
 
 GetJson = Callable[[str], Any]
@@ -96,6 +96,8 @@ def parse_greenhouse(data: dict, board: Board) -> list[Offer]:
         title = (job.get("title") or "").strip()
         if not title:
             continue
+        description = html_to_text(job.get("content") or "")
+        hours = weekly_hours(description)
         offers.append(
             Offer(
                 source="ats:greenhouse",
@@ -103,8 +105,9 @@ def parse_greenhouse(data: dict, board: Board) -> list[Offer]:
                 url=job.get("absolute_url") or "",
                 title=title,
                 company=job.get("company_name") or "",
-                description=html_to_text(job.get("content") or ""),
-                kinds=classify(title, []),
+                description=description,
+                kinds=classify(title, [], weekly_hours=hours),
+                weekly_hours=hours,
                 location=Location(city=((job.get("location") or {}).get("name") or "")),
                 published_at=_iso_date(job.get("first_published") or job.get("updated_at")),
             )
@@ -128,14 +131,19 @@ def parse_lever(data: list | dict, board: Board) -> list[Offer]:
             sections.append(f"{block.get('text', '')}\n{html_to_text(block.get('content', ''))}")
         sections.append(post.get("additionalPlain") or "")
         workplace = (post.get("workplaceType") or "").lower()
+        description = "\n\n".join(s.strip() for s in sections if s and s.strip())
+        hours = weekly_hours(description)
         offers.append(
             Offer(
                 source="ats:lever",
                 source_id=f"{board.identifier}:{post.get('id')}",
                 url=post.get("hostedUrl") or post.get("applyUrl") or "",
                 title=title,
-                description="\n\n".join(s.strip() for s in sections if s and s.strip()),
-                kinds=classify(title, types, part_time="part" in commitment.lower()),
+                description=description,
+                kinds=classify(
+                    title, types, part_time="part" in commitment.lower(), weekly_hours=hours
+                ),
+                weekly_hours=hours,
                 employment_types=types,
                 location=Location(city=categories.get("location") or ""),
                 remote=True if workplace == "remote" else (False if workplace else None),
@@ -156,6 +164,9 @@ def parse_recruitee(data: dict, board: Board) -> list[Offer]:
         description = "\n\n".join(
             html_to_text(post.get(k) or "") for k in ("description", "requirements")
         ).strip()
+        # Recruitee publishes the contract's hours when the employer fills them in
+        published = post.get("min_hours_per_week") or post.get("max_hours_per_week")
+        hours = float(published) if published else weekly_hours(description)
         offers.append(
             Offer(
                 source="ats:recruitee",
@@ -164,7 +175,8 @@ def parse_recruitee(data: dict, board: Board) -> list[Offer]:
                 title=title,
                 company=post.get("company_name") or "",
                 description=description,
-                kinds=classify(title, types, part_time="part" in code.lower()),
+                kinds=classify(title, types, part_time="part" in code.lower(), weekly_hours=hours),
+                weekly_hours=hours,
                 employment_types=types,
                 location=Location(
                     city=post.get("city") or "",

@@ -116,6 +116,10 @@ def cmd_feed(args) -> None:
 
 
 def cmd_francetravail(args) -> None:
+    if args.refresh:
+        return _refresh_france_travail()
+    if not args.town:
+        sys.exit("Indiquer une commune (--town), ou --refresh pour relire les offres connues.")
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else [None]
     ft = FranceTravail()
@@ -126,6 +130,27 @@ def cmd_francetravail(args) -> None:
     except CredentialsError as exc:
         sys.exit(str(exc))
     _store(offers, f"France Travail autour de {town.name} ({args.radius:g} km)")
+
+
+def _refresh_france_travail() -> None:
+    """Re-read every known France Travail offer: current text and hours, or withdrawn."""
+    conn = _connect()
+    ids = db.open_offer_ids(conn, "france_travail")
+    ft = FranceTravail()
+    offers, gone = [], []
+    try:
+        for i, offer_id in enumerate(ids, 1):
+            offer = ft.get(offer_id)
+            if offer is None:
+                gone.append(offer_id)
+            else:
+                offers.append(offer)
+            if i % 250 == 0:
+                print(f"  {i}/{len(ids)} offres relues", flush=True)
+    except CredentialsError as exc:
+        sys.exit(str(exc))
+    _store(offers, "France Travail, offres relues")
+    print(f"{db.close_offers(conn, 'france_travail', gone)} offres retirées : plus en ligne.")
 
 
 def cmd_hiring(args) -> None:
@@ -166,6 +191,10 @@ def cmd_index(args) -> None:
         db.set_embeddings(conn, [(row[0], v) for row, v in zip(batch, vectors, strict=True)])
         done += len(batch)
         print(f"  {done}/{len(todo)} offres indexées")
+
+
+def _hours(weekly_hours: float | None) -> str:
+    return f", {weekly_hours:g} h/semaine" if weekly_hours else ""
 
 
 def cmd_search(args) -> None:
@@ -216,7 +245,7 @@ def cmd_search(args) -> None:
         )
     for i, c in enumerate(results.candidates, 1):
         score = f"{c.extra['rerank']:.2f}" if "rerank" in c.extra else f"{c.score:.3f}"
-        what = ", ".join(KIND_LABELS[k] for k in c.kinds)
+        what = ", ".join(KIND_LABELS[k] for k in c.kinds) + _hours(c.weekly_hours)
         print(f"{i:2}. [{score}] {c.title[:70]}  ({what}, {c.distance_km:.0f} km)")
         print(f"      {c.company or '?'} — {c.city} — {c.url}")
 
@@ -264,13 +293,12 @@ def cmd_eval_pool(args) -> None:
 
 
 def cmd_eval_score(args) -> None:
-    import json
     from pathlib import Path
 
-    from .evaluate import collect, score, to_markdown
+    from .evaluate import collect, load_labels, score, to_markdown
 
     queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
-    labels = json.loads(Path(args.labels).read_text(encoding="utf-8"))
+    labels = load_labels(Path(args.labels))
     rankings, _ = collect(
         _connect(), queries, towns, embedder, reranker, rewriter, profile, configs
     )
@@ -284,6 +312,21 @@ def cmd_eval_score(args) -> None:
         )
 
 
+def cmd_eval_import(args) -> None:
+    import json
+    from collections import Counter
+    from pathlib import Path
+
+    from .evaluate import import_labels
+
+    labels = import_labels(Path(args.directory))
+    Path(args.out).write_text(json.dumps(labels, ensure_ascii=False, indent=1) + "\n", "utf-8")
+    counts = Counter((v["by"], v["label"]) for v in labels.values())
+    print(f"{len(labels)} jugements écrits dans {args.out} :")
+    for (by, label), n in sorted(counts.items()):
+        print(f"  {by:8} {label:6} {n}")
+
+
 def cmd_offers(args) -> None:
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else None
@@ -291,7 +334,7 @@ def cmd_offers(args) -> None:
     print(f"{len(rows)} offres à moins de {args.radius} km de {town.name}.\n")
     for o in rows:
         approx = "≈" if o.precision == "town" else " "
-        what = ", ".join(KIND_LABELS[k] for k in o.kinds)
+        what = ", ".join(KIND_LABELS[k] for k in o.kinds) + _hours(o.weekly_hours)
         print(f"{approx}{o.distance_km:5.1f} km  [{what}] {o.title[:60]}")
         print(f"{'':10}{o.company or '?'} — {o.city} — {o.url}")
         if o.contact:
@@ -325,7 +368,10 @@ def main(argv: list[str] | None = None) -> None:
     p.set_defaults(func=cmd_feed)
 
     p = sub.add_parser("francetravail", help="les offres France Travail autour d'une commune")
-    p.add_argument("--town", required=True)
+    p.add_argument("--town")
+    p.add_argument(
+        "--refresh", action="store_true", help="relit les offres connues (heures, retraits)"
+    )
     p.add_argument("--radius", type=float, default=20)
     p.add_argument("--kind", nargs="+", choices=[k.value for k in Kind])
     p.add_argument("--keywords", default="", help="mots-clés, ex. data")
@@ -380,6 +426,11 @@ def main(argv: list[str] | None = None) -> None:
             p.add_argument("--sheets", default="eval/sheets", help="fiches à juger, en aveugle")
         else:
             p.add_argument("--labels", default="eval/labels.json")
+
+    p = ev.add_parser("import", help="reprend les jugements exportés de la page d'étiquetage")
+    p.add_argument("directory", help="un fichier JSON {label, by?, note?} par offre")
+    p.add_argument("--out", default="eval/labels.json")
+    p.set_defaults(func=cmd_eval_import)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)

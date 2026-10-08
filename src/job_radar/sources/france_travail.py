@@ -19,7 +19,7 @@ from datetime import datetime
 import httpx
 
 from ..http import ApiClient, ApiError, default_client
-from ..models import Kind, Location, Offer, classify
+from ..models import Kind, Location, Offer, classify, weekly_hours
 
 TOKEN_URL = "https://entreprise.francetravail.fr/connexion/oauth2/access_token"
 API = "https://api.francetravail.io/partenaire/offresdemploi/v2"
@@ -133,8 +133,11 @@ def _contact(raw: dict | None) -> str:
 def to_offer(o: dict) -> Offer:
     title = (o.get("intitule") or "").strip()
     types = [t for t in (o.get("typeContratLibelle"), o.get("natureContrat")) if t]
-    part_time = (o.get("dureeTravailLibelleConverti") or "").lower() == "temps partiel"
-    kinds = set(classify(title, types, part_time=part_time))
+    duration = o.get("dureeTravailLibelle") or ""  # "Temps partiel - 24H/semaine\nTravail..."
+    description = (o.get("description") or "").strip()
+    part_time = "temps partiel" in f"{o.get('dureeTravailLibelleConverti')} {duration}".lower()
+    hours = weekly_hours(duration, description)  # a range in the text counts by its lowest value
+    kinds = set(classify(title, types, part_time=part_time, weekly_hours=hours))
     nature = (o.get("natureContrat") or "").lower()
     if o.get("alternance") or "apprentissage" in nature or "professionnalisation" in nature:
         kinds -= {Kind.JOB, Kind.STUDENT_JOB}
@@ -148,8 +151,9 @@ def to_offer(o: dict) -> Offer:
         or f"https://candidat.francetravail.fr/offres/recherche/detail/{o['id']}",
         title=title,
         company=((o.get("entreprise") or {}).get("nom") or "").strip(),
-        description=(o.get("description") or "").strip(),
+        description=description,
         kinds=frozenset(kinds),
+        weekly_hours=hours,
         employment_types=types,
         location=Location(
             city=_city(place.get("libelle", "")),
@@ -200,6 +204,19 @@ class FranceTravail:
                     continue
             if len(results) < end - start + 1:
                 return
+
+    def get(self, offer_id: str) -> Offer | None:
+        """One offer as published now, or None once it is no longer online."""
+        try:
+            raw = self.api.get(
+                f"/offres/{offer_id}",
+                headers={"Authorization": f"Bearer {self.tokens()}", "Accept": "application/json"},
+            )
+        except ApiError as exc:
+            if "HTTP 404" in str(exc) or "HTTP 400" in str(exc):
+                return None  # unknown or withdrawn identifier
+            raise
+        return to_offer(raw) if raw else None
 
 
 __all__ = ["ApiError", "CredentialsError", "FranceTravail", "KIND_FILTERS", "to_offer"]

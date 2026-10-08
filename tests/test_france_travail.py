@@ -129,3 +129,24 @@ def test_token_request_survives_a_dropped_connection(keys):
     client = httpx.Client(transport=httpx.MockTransport(handler))
     assert TokenProvider(client=client, sleep=waits.append)() == "t"
     assert waits == [1, 2]
+
+
+def test_hours_decide_student_jobs():
+    raw = DATA["resultats"][1] | {
+        "dureeTravailLibelle": "Temps partiel - 30H/semaine\nTravail en journée",
+        "description": "Possibilité de contrats de 24 heures à 30 heures par semaine.",
+    }
+    o = to_offer(raw)
+    assert o.weekly_hours == 24 and Kind.STUDENT_JOB in o.kinds  # the range's lowest value
+    o = to_offer(raw | {"dureeTravailLibelle": "Temps partiel - 34H12/semaine", "description": ""})
+    assert o.weekly_hours == 34.2 and o.kinds == {Kind.JOB}  # "temps partiel", but 34 h 12
+
+
+def test_get_one_offer_or_none_once_withdrawn(keys):
+    ft, calls = fake_france_travail(
+        [httpx.Response(200, json=DATA["resultats"][0]), httpx.Response(204),
+         httpx.Response(404, json={"message": "Offre inconnue"})]
+    )  # fmt: skip
+    assert ft.get("900AAAA").source_id == "900AAAA"
+    assert ft.get("GONE") is None
+    assert ft.get("UNKNOWN") is None

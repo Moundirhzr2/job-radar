@@ -98,3 +98,9 @@ def test_no_keywords_means_vector_only_and_missing_vector_is_an_error(indexed):
     assert search(indexed, query(), None, mode="fulltext") == []
     with pytest.raises(ValueError):
         search(indexed, query(), None, mode="hybrid")
+
+
+def test_withdrawn_offers_are_not_searched(indexed):
+    db.close_offers(indexed, "test", [sid for sid, title, *_ in OFFERS if title == "Cuisinier"])
+    found = search(indexed, query(), axis(0), mode="vector")
+    assert titles(found) == ["Alternance Développeur Python", "Data analyst (H/F)"]

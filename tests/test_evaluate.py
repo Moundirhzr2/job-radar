@@ -1,10 +1,13 @@
+import json
 import math
 
 import pytest
 
 from job_radar.evaluate import (
     EvalQuery,
+    import_labels,
     item_key,
+    load_labels,
     mrr_at,
     ndcg_at,
     precision_at,
@@ -72,3 +75,19 @@ def test_sheets_are_blind_and_stable():
     assert sorted(order, key=int) == [str(i) for i in range(20)]
     assert order != sorted(order, key=int)  # not in the order the methods ranked them
     assert order == [it["title"] for it in sheets(queries, list(reversed(to_judge)))["q"]["items"]]
+
+
+def test_judgments_keep_who_judged_and_why(tmp_path):
+    (tmp_path / "q__s__a.json").write_text('{"label": "yes"}')
+    (tmp_path / "q__s__b.json").write_text('{"label": "no", "by": "claude", "note": "26 h"}')
+    (tmp_path / "q__s__c.json").write_text('{"label": "maybe"}')  # not a judgment
+    labels = import_labels(tmp_path)
+    assert labels == {
+        "q__s__a": {"label": "yes", "by": "moundir"},
+        "q__s__b": {"label": "no", "by": "claude", "note": "26 h"},
+    }
+    path = tmp_path / "labels.json"
+    path.write_text(json.dumps(labels))
+    assert load_labels(path) == {"q__s__a": "yes", "q__s__b": "no"}
+    path.write_text('{"q__s__a": "unsure"}')  # the plain format still reads
+    assert load_labels(path) == {"q__s__a": "unsure"}

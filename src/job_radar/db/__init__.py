@@ -67,13 +67,13 @@ _UPSERT = """
 INSERT INTO offers (source, source_id, url, title, company_name, description, kinds,
                     employment_types, city, postal_code, country, location,
                     location_precision, remote, published_at, valid_through, contact,
-                    content_hash)
+                    weekly_hours, content_hash)
 VALUES (%(source)s, %(source_id)s, %(url)s, %(title)s, %(company)s, %(description)s,
         %(kinds)s, %(employment_types)s, %(city)s, %(postal_code)s, %(country)s,
         CASE WHEN %(lon)s::float8 IS NULL OR %(lat)s::float8 IS NULL THEN NULL
              ELSE ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography END,
         %(precision)s, %(remote)s, %(published_at)s, %(valid_through)s, %(contact)s,
-        %(hash)s)
+        %(weekly_hours)s, %(hash)s)
 ON CONFLICT (source, source_id) DO UPDATE SET
     url = EXCLUDED.url, title = EXCLUDED.title, company_name = EXCLUDED.company_name,
     description = EXCLUDED.description, kinds = EXCLUDED.kinds,
@@ -82,7 +82,8 @@ ON CONFLICT (source, source_id) DO UPDATE SET
     location = EXCLUDED.location, location_precision = EXCLUDED.location_precision,
     remote = EXCLUDED.remote,
     published_at = EXCLUDED.published_at, valid_through = EXCLUDED.valid_through,
-    contact = EXCLUDED.contact,
+    contact = EXCLUDED.contact, weekly_hours = EXCLUDED.weekly_hours,
+    closed_at = NULL,  -- published again
     content_hash = EXCLUDED.content_hash,
     -- an edited offer loses its embedding: it will be recomputed from the new text
     embedding = CASE WHEN offers.content_hash = EXCLUDED.content_hash
@@ -140,12 +141,32 @@ def upsert_offers(conn: psycopg.Connection, offers: Iterable[Offer]) -> LoadRepo
                 "published_at": offer.published_at,
                 "valid_through": offer.valid_through,
                 "contact": offer.contact,
+                "weekly_hours": offer.weekly_hours,
                 "hash": h,
             }
         )
     with conn.transaction(), conn.cursor() as cur:
         cur.executemany(_UPSERT, params)
     return report
+
+
+def open_offer_ids(conn: psycopg.Connection, source: str) -> list[str]:
+    """Identifiers of a source's offers still on the radar, oldest first."""
+    rows = conn.execute(
+        "SELECT source_id FROM offers WHERE source = %s AND closed_at IS NULL ORDER BY id",
+        (source,),
+    )
+    return [r[0] for r in rows]
+
+
+def close_offers(conn: psycopg.Connection, source: str, source_ids: Iterable[str]) -> int:
+    """Take offers the source no longer publishes off the radar (kept, for the history)."""
+    cur = conn.execute(
+        "UPDATE offers SET closed_at = now()"
+        " WHERE source = %s AND source_id = ANY(%s) AND closed_at IS NULL",
+        (source, list(source_ids)),
+    )
+    return cur.rowcount
 
 
 @dataclass(frozen=True)
@@ -160,6 +181,7 @@ class RadarOffer:
     published_at: object
     precision: str
     contact: str
+    weekly_hours: float | None = None
 
 
 def offers_within(
@@ -179,9 +201,9 @@ def offers_within(
         WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p)
         SELECT o.id, o.title, o.company_name, o.url, o.city, o.kinds,
                ST_Distance(o.location, here.p) / 1000 AS distance_km, o.published_at,
-               o.location_precision, o.contact
+               o.location_precision, o.contact, o.weekly_hours
         FROM offers o, here
-        WHERE ST_DWithin(o.location, here.p, %(radius_m)s)
+        WHERE ST_DWithin(o.location, here.p, %(radius_m)s) AND o.closed_at IS NULL
           AND (%(kinds)s::text[] IS NULL OR o.kinds && %(kinds)s::text[])
         ORDER BY distance_km, o.published_at DESC NULLS LAST
         LIMIT %(limit)s
@@ -451,7 +473,7 @@ def offers_to_embed(conn: psycopg.Connection, limit: int = 5000) -> list[tuple]:
     """Offers without an embedding (new, or edited since they were embedded)."""
     return conn.execute(
         "SELECT id, title, company_name, city, kinds, description FROM offers "
-        "WHERE embedding IS NULL ORDER BY id LIMIT %s",
+        "WHERE embedding IS NULL AND closed_at IS NULL ORDER BY id LIMIT %s",
         (limit,),
     ).fetchall()
 

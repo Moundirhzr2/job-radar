@@ -50,6 +50,7 @@ class Candidate:
     vector_rank: int | None  # rank in the meaning-based list, None if absent from it
     text_rank: int | None  # rank in the word-based list
     score: float  # RRF score (or the single list's score in vector / fulltext mode)
+    weekly_hours: float | None = None
     extra: dict = field(default_factory=dict, compare=False)
 
 
@@ -57,7 +58,7 @@ _SQL = """
 WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p),
 area AS (
     SELECT o.id FROM offers o, here
-    WHERE ST_DWithin(o.location, here.p, %(radius_m)s)
+    WHERE ST_DWithin(o.location, here.p, %(radius_m)s) AND o.closed_at IS NULL
       AND (%(kinds)s::text[] IS NULL OR o.kinds && %(kinds)s::text[])
 ),
 -- One tsquery from all keywords: words of a keyword are AND-ed, keywords are OR-ed.
@@ -94,7 +95,7 @@ fused AS (
 )
 SELECT o.id, o.title, o.company_name, o.city, o.url, o.kinds,
        ST_Distance(o.location, here.p) / 1000, o.description,
-       f.vector_rank, f.text_rank, f.score
+       f.vector_rank, f.text_rank, f.score, o.weekly_hours
 FROM fused f JOIN offers o USING (id), here
 ORDER BY f.score DESC, o.id
 LIMIT %(limit)s

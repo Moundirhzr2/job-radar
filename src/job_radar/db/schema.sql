@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS offers (
     published_at     timestamptz,
     valid_through    timestamptz,
     contact          text NOT NULL DEFAULT '',  -- publié par l'employeur dans l'offre
+    weekly_hours     real,                 -- heures par semaine (la plus basse d'une fourchette)
+    closed_at        timestamptz,          -- l'offre n'est plus en ligne à la source
     first_seen       timestamptz NOT NULL DEFAULT now(),
     last_seen        timestamptz NOT NULL DEFAULT now(),  -- l'offre a disparu si last_seen stagne
     content_hash     text NOT NULL,
@@ -81,6 +83,9 @@ CREATE TABLE IF NOT EXISTS offers (
     CHECK (kinds <@ ARRAY['internship', 'apprenticeship', 'student_job', 'job']
            AND cardinality(kinds) > 0)
 );
+-- Bases créées avant ces colonnes.
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS weekly_hours real;
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS closed_at timestamptz;
 CREATE INDEX IF NOT EXISTS offers_location ON offers USING gist (location);
 CREATE INDEX IF NOT EXISTS offers_kinds ON offers USING gin (kinds);
 CREATE INDEX IF NOT EXISTS offers_embedding ON offers USING hnsw (embedding vector_cosine_ops);

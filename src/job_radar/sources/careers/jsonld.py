@@ -17,7 +17,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from ...models import Location, Offer, classify
+from ...models import Location, Offer, classify, weekly_hours
 
 SOURCE = "careers:jsonld"
 
@@ -130,14 +130,18 @@ def to_offer(node: dict, page_url: str) -> Offer | None:
     remote = None
     if node.get("jobLocationType"):
         remote = "TELECOMMUTE" in str(node.get("jobLocationType")).upper()
+    description = html_to_text(_text(node.get("description")))
+    hours = weekly_hours(_text(node.get("workHours")), description)
+    part_time = "PART_TIME" in (t.upper() for t in types)
     return Offer(
         source=SOURCE,
         source_id=source_id,
         url=url,
         title=title,
         company=_text(_first(node.get("hiringOrganization"))),
-        description=html_to_text(_text(node.get("description"))),
-        kinds=classify(title, types, part_time="PART_TIME" in (t.upper() for t in types)),
+        description=description,
+        kinds=classify(title, types, part_time=part_time, weekly_hours=hours),
+        weekly_hours=hours,
         employment_types=types,
         location=_location(node),
         remote=remote,

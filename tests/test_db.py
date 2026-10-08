@@ -101,3 +101,15 @@ def test_writes_are_visible_from_another_connection(conn):
     with db.connect(TEST_DATABASE_URL) as other:
         row = other.execute("SELECT count(*), count(embedding) FROM offers").fetchone()
     assert row == (1, 1)
+
+
+def test_withdrawn_offers_leave_the_radar(conn):
+    db.upsert_offers(conn, [offer("a", "Mulhouse", weekly_hours=24.0), offer("b", "Mulhouse")])
+    assert db.open_offer_ids(conn, "test") == ["a", "b"]
+    assert db.close_offers(conn, "test", ["b", "unknown"]) == 1
+    rows = db.offers_within(conn, *MULHOUSE, 10)
+    assert [(r.title, r.weekly_hours) for r in rows] == [("Offre a", 24.0)]
+    assert db.open_offer_ids(conn, "test") == ["a"]
+
+    db.upsert_offers(conn, [offer("b", "Mulhouse")])  # published again
+    assert len(db.offers_within(conn, *MULHOUSE, 10)) == 2

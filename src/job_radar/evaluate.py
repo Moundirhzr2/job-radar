@@ -90,6 +90,34 @@ def run_config(
     return results
 
 
+# --- judgments -----------------------------------------------------------------------------
+
+JUDGES = ("moundir", "claude")
+
+
+def import_labels(directory: Path) -> dict[str, dict]:
+    """Judgments exported from the labeling page: one {label, by?, note?} document per offer.
+
+    A judgment without `by` is the student's own; Claude's carry `by: "claude"` and the reason.
+    """
+    out = {}
+    for f in sorted(directory.glob("*.json")):
+        body = json.loads(f.read_text(encoding="utf-8"))
+        if body.get("label") not in ("yes", "no", "unsure"):
+            continue
+        entry = {"label": body["label"], "by": body.get("by") or JUDGES[0]}
+        if body.get("note"):
+            entry["note"] = body["note"]
+        out[f.stem] = entry
+    return dict(sorted(out.items()))
+
+
+def load_labels(path: Path) -> dict[str, str]:
+    """{key: label} from eval/labels.json, which keeps who judged each offer and why."""
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    return {k: v["label"] if isinstance(v, dict) else v for k, v in raw.items()}
+
+
 # --- measures ------------------------------------------------------------------------------
 
 
