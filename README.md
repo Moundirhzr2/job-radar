@@ -41,7 +41,7 @@ même situation.
 docker compose up -d --wait        # PostgreSQL 17 + PostGIS + pgvector
 uv sync
 
-uv run radar companies --town Mulhouse --radius 15 --naf 62,63   # employeurs du numérique
+uv run radar companies --town Mulhouse --radius 15 --sections J --naf 62,63  # employeurs du numérique
 uv run radar hiring --town Mulhouse --radius 30 --field data      # qui recrute, même sans offre
 uv run radar francetravail --town Mulhouse --radius 20 --kind apprenticeship
 uv run radar careers https://groupeoci.teamtailor.com/jobs       # offres d'un site carrières
@@ -49,9 +49,14 @@ uv run radar feed recruitee amiparis                             # flux d'un log
 uv run radar offers --town Mulhouse --radius 30 --kind internship apprenticeship
 ```
 
-Essais sur données réelles autour de Mulhouse : 345 offres France Travail (dont 65 alternances),
-6 entreprises du numérique susceptibles de recruter, et les offres des sites carrières de trois
-entreprises.
+Essais sur données réelles autour de Mulhouse : 3 681 offres indexées (France Travail et sites
+carrières), dont 514 alternances à moins de 100 km ; 172 employeurs du numérique à moins de
+15 km, dont 6 que La Bonne Boîte signale comme susceptibles de recruter.
+
+Ce que ces données montrent : à moins de 100 km de Mulhouse, France Travail ne publie aucune
+alternance data, et ses 5 alternances en informatique sont toutes déposées par des écoles. Un
+étudiant qui ne cherche que là ne trouve presque rien : c'est pour cela que le radar lit aussi
+les sites carrières et repère les entreprises qui recrutent sans publier d'offre.
 
 ## Les règles
 

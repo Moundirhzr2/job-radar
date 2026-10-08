@@ -18,7 +18,7 @@ from typing import Literal
 import anthropic
 from pydantic import BaseModel, Field
 
-DEFAULT_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5")
+DEFAULT_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5-5")
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 SYSTEM = """\
@@ -72,7 +72,7 @@ def rewrite(
         content = f"<profile>\n{profile}\n</profile>\n\n{content}"
     response = (api or client()).beta.messages.parse(
         model=model,
-        max_tokens=4000,
+        max_tokens=16000,  # room for thinking: a cut-off answer would fail validation
         system=SYSTEM,
         messages=[{"role": "user", "content": content}],
         output_format=RewrittenQuery,

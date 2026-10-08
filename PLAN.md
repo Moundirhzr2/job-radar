@@ -146,7 +146,7 @@ fonctionnalité codée par lui avec accompagnement.
 - Réseau de l'environnement cloud : accès **Full** (lecture des sites d'entreprises).
 - Variables d'environnement (jamais dans le chat ni dans le dépôt) :
   `FRANCE_TRAVAIL_CLIENT_ID`, `FRANCE_TRAVAIL_CLIENT_SECRET`, `RADAR_ANTHROPIC_API_KEY`.
-- Modèle Claude par défaut : `claude-opus-5`, configurable.
+- Modèle Claude par défaut : `claude-opus-5-5`, configurable.
 - Le moteur du projet précédent (dépôt `Rag` : recherche hybride pgvector + plein texte, RRF,
   citations, évaluation) est réutilisé.
 
