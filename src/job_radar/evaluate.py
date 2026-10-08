@@ -118,6 +118,13 @@ def load_labels(path: Path) -> dict[str, str]:
     return {k: v["label"] if isinstance(v, dict) else v for k, v in raw.items()}
 
 
+def withdrawn(conn, query_ids: Sequence[str]) -> set[str]:
+    """Keys of offers that left the radar: no configuration can find them any more, so their
+    judgments must not count (a withdrawn relevant offer would lower every score alike)."""
+    rows = conn.execute("SELECT source, source_id FROM offers WHERE closed_at IS NOT NULL")
+    return {item_key(q, s, sid) for s, sid in rows for q in query_ids}
+
+
 # --- measures ------------------------------------------------------------------------------
 
 
@@ -227,6 +234,7 @@ class Collected:
     rankings: dict[str, dict[str, list[str]]]  # config -> request -> ranked item keys
     items: dict[str, dict]  # what each ranked offer looks like
     rerank: dict[str, float]  # item key -> best re-ranking score it received
+    best: dict[tuple[str, str], float]  # (config, request) -> score of its best offer
 
 
 def collect(
@@ -244,6 +252,7 @@ def collect(
     rankings: dict[str, dict[str, list[str]]] = {c: {} for c in configs}
     items: dict[str, dict] = {}
     rerank: dict[str, float] = {}
+    best: dict[tuple[str, str], float] = {}
     for q in queries:
         for name in configs:
             res = run_config(
@@ -251,6 +260,8 @@ def collect(
             )
             keys = ranked_keys(conn, q, res)
             rankings[name][q.id] = keys
+            if res.best_score is not None:
+                best[(name, q.id)] = res.best_score
             for key, c in zip(keys, res.candidates, strict=True):
                 if "rerank" in c.extra:
                     rerank[key] = max(rerank.get(key, 0.0), c.extra["rerank"])
@@ -270,34 +281,48 @@ def collect(
                         "found_by": [],
                     },
                 )["found_by"].append(name)
-    return Collected(rankings, items, rerank)
+    return Collected(rankings, items, rerank, best)
+
+
+@dataclass
+class Calibration:
+    answered_floor: tuple[float, str, str] | None  # lowest best score of a request with answers
+    empty_ceiling: tuple[float, str, str] | None  # highest best score of a request without any
+    lowest_relevant: float | None  # lowest score of a relevant offer, at any rank
+    rows: list[tuple[float, float, float, int]]  # threshold, precision, recall, offers kept
 
 
 def calibration(
     rerank: dict[str, float],
+    best: dict[tuple[str, str], float],
     labels: dict[str, str],
     thresholds: Sequence[float] = (0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5),
-) -> tuple[float | None, float | None, list[tuple[float, float, float, int]]]:
+) -> Calibration:
     """What the re-ranking score says about relevance, on the judged offers.
 
-    Returns the lowest score of a relevant offer, the highest score reached by an offer of a
-    request that has no relevant offer at all, and for each threshold t: the precision and
-    recall of "score >= t" as a relevance signal and how many offers it keeps. A confidence
-    threshold between the first two values hides no relevant offer and still lets the radar
-    say "nothing convincing" for a request with nothing to find.
+    The confidence threshold decides on the best offer of a search. It is safe when it lies
+    between the best score of every request that has relevant offers (answered_floor) and the
+    best score of the requests that have none (empty_ceiling): then the radar answers the first
+    and says "nothing convincing" for the second. rows give, for each threshold t, the
+    precision and recall of "score >= t" as a relevance signal on single offers.
     """
+    answered = {k.split("__")[0] for k, v in labels.items() if v == "yes"}
+    with_answers = [(s, c, q) for (c, q), s in best.items() if q in answered]
+    without = [(s, c, q) for (c, q), s in best.items() if q not in answered]
     judged = {k: s for k, s in rerank.items() if labels.get(k) in ("yes", "no")}
     relevant = [s for k, s in judged.items() if labels[k] == "yes"]
-    answered = {k.split("__")[0] for k, v in labels.items() if v == "yes"}
-    empty = [s for k, s in judged.items() if k.split("__")[0] not in answered]
     rows = []
     for t in thresholds:
         kept = [k for k, s in judged.items() if s >= t]
         tp = sum(labels[k] == "yes" for k in kept)
-        rows.append(
-            (t, tp / len(kept) if kept else 0.0, tp / len(relevant) if relevant else 0.0, len(kept))
-        )
-    return (min(relevant) if relevant else None), (max(empty) if empty else None), rows
+        recall = tp / len(relevant) if relevant else 0.0
+        rows.append((t, tp / len(kept) if kept else 0.0, recall, len(kept)))
+    return Calibration(
+        min(with_answers) if with_answers else None,
+        max(without) if without else None,
+        min(relevant) if relevant else None,
+        rows,
+    )
 
 
 def pool(

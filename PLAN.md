@@ -121,7 +121,7 @@ mesurée avant qu'on fasse confiance à une réponse.
 | 3 | Entreprises autour d'un point (annuaire officiel), dirigeants des petites entreprises | Fait |
 | 4 | Géolocalisation des offres, ligne de commande | Fait |
 | 5 | Offres France Travail + entreprises qui recrutent (La Bonne Boîte) | Fait : 3 681 offres (dont 514 alternances à moins de 100 km) et 6 employeurs probables autour de Mulhouse ; heures par semaine, offres retirées |
-| 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | À faire (clé Anthropic + étiquettes) |
+| 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | Fait : nDCG@10 0,49 → 0,73 (réécriture + re-ranking) sur 129 jugements, seuil de confiance 0,2 calibré |
 | 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | En partie : `radar fit` (acquis, à confirmer, manques, mini-projets) et `radar draft` (brouillon au contact publié, faits vérifiés) ; fiche entreprise à faire |
 | 8 | Application web avec la carte, suivi des candidatures | À faire |
 | 9 | Démo en ligne, mesures, ligne de CV | À faire |

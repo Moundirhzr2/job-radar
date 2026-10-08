@@ -11,6 +11,16 @@
   "label": "no",
   "by": "moundir"
  },
+ "alternance-data__france_travail__213QNWQ": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas une alternance data"
+ },
+ "alternance-data__france_travail__213RBYP": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas une alternance data"
+ },
  "alternance-data__france_travail__213TFSY": {
   "label": "no",
   "by": "moundir"
@@ -35,6 +45,11 @@
  "alternance-data__france_travail__214QMSC": {
   "label": "no",
   "by": "moundir"
+ },
+ "alternance-data__france_travail__214RJBW": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas une alternance data"
  },
  "alternance-data__france_travail__4506774": {
   "label": "no",
@@ -94,7 +109,17 @@
   "label": "no",
   "by": "moundir"
  },
+ "alternance-info__france_travail__213KGXC": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas une alternance en développement, systèmes ou réseaux"
+ },
  "alternance-info__france_travail__214VJNR": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas une alternance en développement, systèmes ou réseaux"
+ },
+ "alternance-info__france_travail__5392318": {
   "label": "no",
   "by": "claude",
   "note": "pas une alternance en développement, systèmes ou réseaux"
@@ -150,6 +175,16 @@
   "label": "no",
   "by": "moundir"
  },
+ "alternance-info__france_travail__7135049": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas une alternance en développement, systèmes ou réseaux"
+ },
+ "alternance-info__france_travail__7168806": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas une alternance en développement, systèmes ou réseaux"
+ },
  "alternance-info__france_travail__7169321": {
   "label": "no",
   "by": "claude",
@@ -195,6 +230,16 @@
  "emploi-data__france_travail__211KSPT": {
   "label": "no",
   "by": "moundir"
+ },
+ "emploi-data__france_travail__213SGTM": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas un métier de la data (bases de données, data analyst, data engineer, BI)"
+ },
+ "emploi-data__france_travail__213SPGK": {
+  "label": "no",
+  "by": "claude",
+  "note": "encadrement d'une équipe d'enquêteurs sur le terrain : pas un métier de la data (bases de données, data analyst, data engineer, BI)"
  },
  "emploi-data__france_travail__213VNBV": {
   "label": "no",
@@ -249,10 +294,20 @@
   "by": "claude",
   "note": "déploiement de logiciel : pas un métier de la data (bases de données, data analyst, data engineer, BI)"
  },
+ "emploi-data__france_travail__6927871": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas un métier de la data (bases de données, data analyst, data engineer, BI)"
+ },
  "emploi-data__france_travail__7056757": {
   "label": "no",
   "by": "claude",
   "note": "contrôle des consommations d'eau et de chauffage d'un bailleur : pas un métier de la data (bases de données, data analyst, data engineer, BI)"
+ },
+ "emploi-data__france_travail__7115478": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas un métier de la data (bases de données, data analyst, data engineer, BI)"
  },
  "emploi-data__france_travail__7133973": {
   "label": "no",
@@ -281,6 +336,11 @@
   "label": "no",
   "by": "claude",
   "note": "développement web : pas un métier de la data (bases de données, data analyst, data engineer, BI)"
+ },
+ "emploi-data__france_travail__7604234": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas un métier de la data (bases de données, data analyst, data engineer, BI)"
  },
  "it__france_travail__213PGRR": {
   "label": "no",
@@ -311,9 +371,24 @@
   "label": "no",
   "by": "moundir"
  },
+ "it__france_travail__5014991": {
+  "label": "no",
+  "by": "claude",
+  "note": "poste administratif : pas de l'informatique"
+ },
  "it__france_travail__5352258": {
   "label": "no",
   "by": "moundir"
+ },
+ "it__france_travail__6927938": {
+  "label": "no",
+  "by": "claude",
+  "note": "communication : pas un poste en informatique"
+ },
+ "it__france_travail__6935741": {
+  "label": "no",
+  "by": "claude",
+  "note": "manœuvre sur un chantier de réseaux (câbles, gaines) : pas de l'informatique"
  },
  "it__france_travail__7012433": {
   "label": "no",
@@ -331,6 +406,11 @@
   "label": "no",
   "by": "moundir"
  },
+ "it__france_travail__7117626": {
+  "label": "no",
+  "by": "claude",
+  "note": "même type de poste que « Administrateur réseau » (FHF), que tu as jugé non pertinent"
+ },
  "it__france_travail__7135063": {
   "label": "no",
   "by": "moundir"
@@ -338,6 +418,11 @@
  "it__france_travail__7149456": {
   "label": "no",
   "by": "moundir"
+ },
+ "it__france_travail__7431128": {
+  "label": "no",
+  "by": "claude",
+  "note": "même type de poste que « Administrateur réseau » (FHF), que tu as jugé non pertinent"
  },
  "it__france_travail__7463942": {
   "label": "no",
@@ -371,6 +456,11 @@
   "label": "yes",
   "by": "moundir"
  },
+ "weekend__france_travail__212MVDY": {
+  "label": "no",
+  "by": "claude",
+  "note": "poste de pharmacien : diplôme de docteur en pharmacie exigé"
+ },
  "weekend__france_travail__213BVDR": {
   "label": "yes",
   "by": "moundir"
@@ -401,6 +491,11 @@
   "label": "yes",
   "by": "moundir"
  },
+ "weekend__france_travail__213ZQBK": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "ménage à domicile, 24 h par semaine : à toi de trancher"
+ },
  "weekend__france_travail__214GMLR": {
   "label": "no",
   "by": "claude",
@@ -422,6 +517,11 @@
  "weekend__france_travail__214KYVM": {
   "label": "yes",
   "by": "moundir"
+ },
+ "weekend__france_travail__214KYVV": {
+  "label": "no",
+  "by": "claude",
+  "note": "35 h par semaine, du lundi au vendredi"
  },
  "weekend__france_travail__214MQGJ": {
   "label": "yes",
@@ -451,5 +551,25 @@
  "weekend__france_travail__3879689": {
   "label": "yes",
   "by": "moundir"
+ },
+ "weekend__france_travail__6635804": {
+  "label": "no",
+  "by": "claude",
+  "note": "aide-soignant : métier réglementé, diplôme d'État exigé"
+ },
+ "weekend__france_travail__7497970": {
+  "label": "yes",
+  "by": "claude",
+  "note": "temps partiel, 21 h par semaine"
+ },
+ "weekend__france_travail__7672836": {
+  "label": "yes",
+  "by": "claude",
+  "note": "15 h par semaine, uniquement le week-end"
+ },
+ "weekend__france_travail__7675471": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "formation bureautique, 16 h par semaine, horaires non précisés : à toi de trancher"
  }
 }

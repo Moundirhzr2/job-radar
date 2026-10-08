@@ -299,26 +299,39 @@ def cmd_eval_pool(args) -> None:
 def cmd_eval_score(args) -> None:
     from pathlib import Path
 
-    from .evaluate import calibration, collect, load_labels, score, to_markdown
+    from .evaluate import calibration, collect, load_labels, score, to_markdown, withdrawn
     from .pipeline import CONFIDENCE
 
     queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
+    conn = _connect()
     labels = load_labels(Path(args.labels))
-    found = collect(_connect(), queries, towns, embedder, reranker, rewriter, profile, configs)
+    gone = withdrawn(conn, [q.id for q in queries]) & set(labels)
+    labels = {k: v for k, v in labels.items() if k not in gone}
+    if gone:
+        print(f"{len(gone)} jugements ignorés : offres retirées depuis par l'employeur.\n")
+    found = collect(conn, queries, towns, embedder, reranker, rewriter, profile, configs)
     rankings = found.rankings
     unjudged = {k for per_q in rankings.values() for r in per_q.values() for k in r[:10]} - set(
         labels
     )
     print(to_markdown(score(rankings, labels)))
-    lowest, empty, rows = calibration(found.rerank, labels)
-    if rows:
+    cal = calibration(found.rerank, found.best, labels)
+    if cal.rows:
         print(f"\nSeuil de confiance (re-ranking), actuellement {CONFIDENCE} :")
-        if lowest is not None:
-            print(f"  offre pertinente la moins bien notée : {lowest:.2f}")
-        if empty is not None:
-            print(f"  meilleur score d'une recherche sans offre pertinente : {empty:.2f}")
+        if cal.answered_floor:
+            s, config, q = cal.answered_floor
+            print(f"  meilleure offre d'une recherche qui en a de pertinentes : {s:.2f} au moins")
+            print(f"    (le plus bas : « {config} », recherche {q})")
+        if cal.empty_ceiling:
+            s, config, q = cal.empty_ceiling
+            print(f"  meilleure offre d'une recherche sans offre pertinente : {s:.2f} au plus")
+            print(f"    (« {config} », recherche {q})")
+        if cal.lowest_relevant is not None:
+            print(
+                f"  offre pertinente la moins bien notée, à tout rang : {cal.lowest_relevant:.2f}"
+            )
         print("  seuil  précision  rappel  offres gardées")
-        for t, precision, recall, kept in rows:
+        for t, precision, recall, kept in cal.rows:
             print(f"  {t:5.2f}  {precision:9.2f}  {recall:6.2f}  {kept:14}")
     if unjudged:
         print(

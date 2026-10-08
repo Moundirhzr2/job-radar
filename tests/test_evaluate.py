@@ -16,6 +16,7 @@ from job_radar.evaluate import (
     score,
     sheets,
     to_markdown,
+    withdrawn,
 )
 
 LABELS = {
@@ -96,7 +97,19 @@ def test_judgments_keep_who_judged_and_why(tmp_path):
 
 def test_calibration_brackets_a_safe_confidence_threshold():
     labels = {"q__s__a": "yes", "q__s__b": "no", "q__s__c": "yes", "e__s__x": "no"}
-    rerank = {"q__s__a": 0.6, "q__s__b": 0.3, "q__s__c": 0.25, "e__s__x": 0.17, "q__s__z": 0.9}
-    lowest, empty, rows = calibration(rerank, labels, thresholds=(0.2, 0.5))
-    assert (lowest, empty) == (0.25, 0.17)  # "e" has nothing relevant: its best is 0.17
-    assert rows == [(0.2, 2 / 3, 1.0, 3), (0.5, 1.0, 0.5, 1)]  # unjudged "z" is ignored
+    rerank = {"q__s__a": 0.6, "q__s__b": 0.3, "q__s__c": 0.12, "e__s__x": 0.17, "q__s__z": 0.9}
+    best = {("A", "q"): 0.6, ("B", "q"): 0.23, ("A", "e"): 0.17, ("B", "e"): 0.15}
+    cal = calibration(rerank, best, labels, thresholds=(0.2, 0.5))
+    assert cal.answered_floor == (0.23, "B", "q")  # every search for "q" finds 0.23 or more
+    assert cal.empty_ceiling == (0.17, "A", "e")  # "e" has nothing relevant to find
+    assert cal.lowest_relevant == 0.12  # a relevant offer can still rank low: shown apart
+    assert cal.rows == [(0.2, 0.5, 0.5, 2), (0.5, 1.0, 0.5, 1)]  # unjudged "z" is ignored
+
+
+def test_withdrawn_offers_are_left_out_of_the_judgments(conn):
+    from job_radar import db
+    from tests.test_db import offer
+
+    db.upsert_offers(conn, [offer("a", "Mulhouse"), offer("b", "Mulhouse")])
+    db.close_offers(conn, "test", ["b"])
+    assert withdrawn(conn, ["q", "r"]) == {"q__test__b", "r__test__b"}

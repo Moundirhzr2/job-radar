@@ -18,8 +18,9 @@ from .search import Candidate, Mode, SearchQuery, keywords_of, search
 
 # Below this re-ranking score for the best candidate, the radar says it found nothing
 # convincing instead of presenting weak matches as answers. Set on the evaluation set
-# (radar eval score): the relevant offer with the lowest score got 0.23, and the best offer
-# for the request with nothing to find (a data apprenticeship within 30 km) got 0.17.
+# (radar eval score): every request with relevant offers had a best offer scoring 0.23 or
+# more, and the request with nothing to find (a data apprenticeship within 30 km) never went
+# above 0.17. Offers below the threshold are still listed, apart.
 CONFIDENCE = 0.2
 
 
