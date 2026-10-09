@@ -1,1 +1,132 @@
-<!doctype html><title>Job Radar</title>
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f7f8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#12171c" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Stages, alternances et jobs étudiants autour d’une commune, depuis des sources officielles, avec le suivi de tes candidatures. Internships, apprenticeships and student jobs around a French town, from official sources.">
+  <title>Job Radar</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%2317212b' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%23b0246e'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://data.geopf.fr" crossorigin>
+  <link rel="preload" href="/static/vendor/atkinson/atkinson-hyperlegible-next-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="modulepreload" href="/static/i18n.js">
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-view="radar">
+  <a class="skip" href="#panel-body" data-i18n="skip">Aller à la liste</a>
+
+  <header class="bar">
+    <h1 class="brand" translate="no">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13"/><circle cx="16" cy="16" r="8" class="ring-2"/><circle cx="16" cy="16" r="3.5" class="core"/></svg>
+      Job&nbsp;Radar
+    </h1>
+
+    <form class="town" id="town-form" role="search" aria-label="Commune autour de laquelle chercher" data-i18n-attr="aria-label=town.form" novalidate>
+      <label for="town" data-i18n="town.label">Autour de</label>
+      <input id="town" name="town" type="text" list="town-list" placeholder="Mulhouse, Colmar…" data-i18n-attr="placeholder=town.placeholder" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-describedby="town-error">
+      <datalist id="town-list"></datalist>
+      <p class="field-error" id="town-error" role="alert" hidden></p>
+    </form>
+
+    <div class="radius">
+      <label for="radius" data-i18n="radius.label">Rayon</label>
+      <input id="radius" name="radius" type="range" min="2" max="100" step="1" value="30" aria-valuetext="30 kilomètres">
+      <output id="radius-out" for="radius" aria-hidden="true">30&nbsp;km</output>
+    </div>
+
+    <nav class="views" aria-label="Vues" data-i18n-attr="aria-label=views">
+      <a href="/" id="tab-radar" aria-current="page"><span data-i18n="view.radar">Radar</span></a>
+      <a href="?view=tracker" id="tab-tracker"><span data-i18n="view.tracker">Suivi</span> <span id="due-badge" class="count-badge" hidden></span></a>
+    </nav>
+    <a href="?lang=en" id="lang-link" class="lang" hreflang="en" lang="en">English</a>
+  </header>
+
+  <noscript><p class="noscript">Job Radar a besoin de JavaScript pour afficher la carte et la liste des offres. Job Radar needs JavaScript to show the map and the list of offers.</p></noscript>
+
+  <main id="view-radar" class="radar">
+    <section class="panel" aria-labelledby="search-label">
+      <form class="search" id="search-form" role="search" novalidate>
+        <label for="q" id="search-label" data-i18n="search.label">Que cherches-tu&nbsp;?</label>
+        <div class="search-row">
+          <input id="q" name="q" type="search" placeholder="alternance data analyst, job le week-end…" data-i18n-attr="placeholder=search.placeholder" autocomplete="off" enterkeyhint="search" maxlength="300" aria-describedby="search-error">
+          <button type="submit" class="btn primary" id="search-submit">
+            <svg class="icon" aria-hidden="true"><use href="/static/vendor/phosphor/sprite.svg#magnifying-glass"/></svg>
+            <span data-i18n="search.submit">Chercher</span>
+          </button>
+        </div>
+        <p class="field-error" id="search-error" role="alert" hidden></p>
+        <fieldset class="kinds" id="kinds">
+          <legend class="sr-only" data-i18n="kinds.legend">Types de contrat affichés (aucun choisi&nbsp;: tous)</legend>
+          <button type="button" class="chip" data-kind="internship" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="/static/vendor/phosphor/sprite.svg#check"/></svg><span data-i18n="kind.internship">Stage</span></button>
+          <button type="button" class="chip" data-kind="apprenticeship" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="/static/vendor/phosphor/sprite.svg#check"/></svg><span data-i18n="kind.apprenticeship">Alternance</span></button>
+          <button type="button" class="chip" data-kind="job" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="/static/vendor/phosphor/sprite.svg#check"/></svg><span data-i18n="kind.job">Emploi</span></button>
+          <button type="button" class="chip" data-kind="student_job" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="/static/vendor/phosphor/sprite.svg#check"/></svg><span data-i18n="kind.student_job">Job étudiant</span></button>
+        </fieldset>
+        <label class="check">
+          <input type="checkbox" id="rewrite" name="rewrite" checked>
+          <span data-i18n="search.rewrite">Laisser Claude reformuler ta demande</span>
+        </label>
+      </form>
+      <div id="panel-body" class="panel-body" tabindex="-1"></div>
+    </section>
+
+    <section class="map-wrap" aria-label="Carte" data-i18n-attr="aria-label=map.region">
+      <div id="map" role="application" aria-label="Carte des offres et des employeurs. La liste donne les mêmes informations au clavier." data-i18n-attr="aria-label=map.label"></div>
+      <div class="legend" aria-hidden="true">
+        <span><i class="lg-place"></i><span data-i18n="legend.place">Offres</span></span>
+        <span><i class="lg-approx"></i><span data-i18n="legend.approx">Placée au centre de la commune</span></span>
+        <span><i class="lg-hiring"></i><span data-i18n="legend.hiring">Embauche souvent</span></span>
+        <span><i class="lg-result"></i><span data-i18n="legend.result">Résultat de recherche</span></span>
+      </div>
+    </section>
+  </main>
+
+  <main id="view-tracker" class="tracker" hidden>
+    <div class="tracker-inner">
+      <h2 class="view-title" id="tracker-title" tabindex="-1" data-i18n="tracker.title">Suivi des candidatures</h2>
+      <p class="summary" id="summary"></p>
+      <details class="add-spontaneous" id="add-spontaneous">
+        <summary>
+          <svg class="icon" aria-hidden="true"><use href="/static/vendor/phosphor/sprite.svg#plus"/></svg>
+          <span data-i18n="spontaneous.summary">Ajouter une candidature spontanée</span>
+        </summary>
+        <form id="spontaneous-form" class="grid-form" novalidate>
+          <label><span data-i18n="field.company">Entreprise</span>
+            <input name="company" type="text" autocomplete="off" placeholder="Boulangerie Martin…" data-i18n-attr="placeholder=placeholder.company" aria-describedby="company-error">
+            <span class="field-error" id="company-error" hidden></span>
+          </label>
+          <label><span data-i18n="field.status">Statut</span>
+            <select name="status">
+              <option value="to_apply" data-i18n="status.to_apply">À envoyer</option>
+              <option value="sent" data-i18n="status.sent">Envoyée</option>
+            </select>
+          </label>
+          <label><span data-i18n="field.channel">Canal</span>
+            <input name="channel" type="text" autocomplete="off" placeholder="e-mail, sur place, site carrières…" data-i18n-attr="placeholder=placeholder.channel">
+          </label>
+          <label><span data-i18n="field.publishedContact">Contact publié par l’entreprise</span>
+            <input name="contact" type="text" autocomplete="off" spellcheck="false" placeholder="recrutement@entreprise.fr…" data-i18n-attr="placeholder=placeholder.contact">
+          </label>
+          <label class="wide"><span data-i18n="field.notes">Notes</span>
+            <textarea name="notes" rows="2" autocomplete="off" placeholder="Ce que tu veux retenir…" data-i18n-attr="placeholder=placeholder.notes"></textarea>
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary"><span data-i18n="spontaneous.submit">Ajouter au suivi</span></button>
+            <p class="field-error" id="spontaneous-error" role="alert" hidden></p>
+          </div>
+        </form>
+      </details>
+      <div id="applications"></div>
+    </div>
+  </main>
+
+  <p class="sr-only" id="announce" aria-live="polite"></p>
+  <div class="toast" id="toast" aria-hidden="true" hidden><span id="toast-text"></span></div>
+
+  <script src="/static/vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

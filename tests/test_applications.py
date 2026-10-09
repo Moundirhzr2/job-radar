@@ -33,6 +33,10 @@ def test_sending_dates_the_application_and_plans_the_follow_up(conn):
     assert a.applied_on == date.today()
     assert a.follow_up_on == date.today() + timedelta(days=db.FOLLOW_UP_DAYS)
 
+    a = db.update_application(conn, a.id, follow_up_on=date.today() - timedelta(days=1))
+    a = db.update_application(conn, a.id, status="followed_up")  # followed up today
+    assert a.follow_up_on == date.today() + timedelta(days=db.FOLLOW_UP_DAYS)
+
     a = db.update_application(conn, a.id, status="interview", notes="Entretien mardi")
     assert a.follow_up_on is None and a.notes == "Entretien mardi"  # an answer came
 

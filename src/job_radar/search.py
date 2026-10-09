@@ -53,6 +53,7 @@ class Candidate:
     weekly_hours: float | None = None
     latitude: float | None = None
     longitude: float | None = None
+    source: str = ""
     extra: dict = field(default_factory=dict, compare=False)
 
 
@@ -98,7 +99,7 @@ fused AS (
 SELECT o.id, o.title, o.company_name, o.city, o.url, o.kinds,
        ST_Distance(o.location, here.p) / 1000, o.description,
        f.vector_rank, f.text_rank, f.score, o.weekly_hours,
-       ST_Y(o.location::geometry), ST_X(o.location::geometry)
+       ST_Y(o.location::geometry), ST_X(o.location::geometry), o.source
 FROM fused f JOIN offers o USING (id), here
 ORDER BY f.score DESC, o.id
 LIMIT %(limit)s

@@ -68,6 +68,7 @@ def test_check_never_lets_an_unsupported_skill_pass():
     assert "introuvable" in by["dbt"].note
     assert by["Anglais"].profile_evidence is None and by["Anglais"].suggestion is None
     assert by["Tableau"].evidence_found is False  # the offer never says it
+    assert by["dbt"].profile_evidence_found is False and by["SQL"].profile_evidence_found
     assert [p.skill for p in fit.projects] == ["dbt", "Anglais", "Tableau"]  # three at most
 
 
@@ -88,6 +89,10 @@ def test_request_and_checked_answer(stub):  # noqa: F811
     user = body["messages"][0]["content"]
     assert user.startswith(f"<profile>\n{PROFILE}\n</profile>")
     assert "<offer>\nTitre : Alternance Data Analyst" in user
+    assert 'in French, addressing the student as "tu"' in body["system"]
+
+    analyse(OFFER, PROFILE, api=api, model="m", lang="en")
+    assert "in British English" in state["body"]["system"]
 
 
 def test_refusal_and_missing_profile(stub):  # noqa: F811
@@ -109,6 +114,9 @@ def test_offer_lookup_and_fit_cache(conn):
     db.save_fit(conn, o, "profile-hash", "m", {"summary": "ok"})
     assert db.get_fit(conn, o, "profile-hash", "m") == {"summary": "ok"}
     assert db.get_fit(conn, o, "other-profile", "m") is None  # another profile, another fit
+    assert db.get_fit(conn, o, "profile-hash", "m", "en") is None  # written in another language
+    db.save_fit(conn, o, "profile-hash", "m", {"summary": "fine"}, "en")
+    assert db.get_fit(conn, o, "profile-hash", "m", "en") == {"summary": "fine"}
 
     db.upsert_offers(conn, [offer("a", "Mulhouse", description="SQL et Python")])
     edited = db.get_offer(conn, str(o.id))

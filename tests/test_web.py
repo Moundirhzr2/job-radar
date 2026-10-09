@@ -9,6 +9,8 @@ from job_radar import db
 from job_radar.draft import Draft
 from job_radar.draft import check as check_draft
 from job_radar.fit import Fit, check
+from job_radar.models import Kind, Location, Offer
+from job_radar.rewrite import RewrittenQuery
 from job_radar.sources.geo import GeocodingUnavailable, Town
 from job_radar.web import Services, create_app
 from tests.conftest import TEST_DATABASE_URL
@@ -26,7 +28,7 @@ class FakeGeocoder:
         return [Town("Mulhouse", "68224", ("68100", "68200"), *MULHOUSE, 105000)][:limit]
 
 
-def fake_fit(text, profile):
+def fake_fit(text, profile, lang="fr"):
     return check(Fit(**json.loads(json.dumps(FIT))), text, profile)
 
 
@@ -42,7 +44,7 @@ def web(indexed, tmp_path):  # noqa: F811
         embedder=FakeEmbedder,
         reranker=FakeReranker,
         rewrite=None,
-        analyse=lambda text, prof: calls.append("fit") or fake_fit(text, prof),
+        analyse=lambda text, prof, lang="fr": calls.append(f"fit-{lang}") or fake_fit(text, prof),
         draft=lambda text, contact, prof: check_draft(Draft(**DRAFT), prof),
         allows_ai_input=lambda url: True,
     )
@@ -60,12 +62,16 @@ def ids_by_title(client, titles):
 
 def test_page_and_towns(web):
     assert "Job Radar" in web.get("/").text
+    script = web.get("/static/app.js")
+    assert script.status_code == 200 and "javascript" in script.headers["content-type"]
+    assert web.get("/static/style.css").status_code == 200
     towns = web.get("/api/towns", params={"q": "Mulhouse"}).json()
     assert towns[0] | {} == {
         "name": "Mulhouse", "insee": "68224", "postal_codes": ["68100", "68200"],
         "lat": MULHOUSE[0], "lon": MULHOUSE[1],
     }  # fmt: skip
-    assert web.get("/api/towns", params={"q": "panne"}).status_code == 503
+    down = web.get("/api/towns", params={"q": "panne"})
+    assert down.status_code == 503 and down.json()["detail"]["code"] == "geocoding_unavailable"
     assert web.get("/api/towns", params={"q": "x"}).status_code == 422  # too short
 
 
@@ -88,26 +94,53 @@ def test_search_without_rewriting_and_with_a_failing_rewrite(web):
     assert found["results"][0]["title"] == "Data analyst (H/F)"
     assert found["results"][0]["score"] == 1.0 and found["confident"]
     assert found["query"]["rewritten"] is False and found["notice"] is None
+    assert found["results"][0]["source"] == "test"
 
     def broken(request, profile):
         raise RuntimeError("no key")
 
     web.services.rewrite = broken
     found = web.get("/api/search", params=params).json()
-    assert "Réécriture indisponible" in found["notice"] and found["results"]
+    assert found["notice"] == {"code": "rewrite_unavailable", "error": "RuntimeError"}
+    assert found["results"]
+
+
+def test_a_request_is_rewritten_once_whatever_the_radius(web):
+    asked = []
+
+    def rewrite(request, profile):
+        asked.append(request)
+        return RewrittenQuery(
+            semantic_query="offre data", keywords=["data"], kinds=[], town=None, radius_km=None
+        )
+
+    web.services.rewrite = rewrite
+    params = {"q": "data sql", "lat": MULHOUSE[0], "lon": MULHOUSE[1]}
+    for radius in (10, 30):
+        found = web.get("/api/search", params=params | {"radius_km": radius}).json()
+        assert found["query"]["rewritten"] is True
+    web.get("/api/search", params=params | {"q": "Data  SQL"})  # same request, other spacing
+    assert asked == ["data sql"]
 
 
 def test_offer_detail_fit_cache_and_draft(web):
     offer_id = ids_by_title(web, {"Data analyst (H/F)"})["Data analyst (H/F)"]
     detail = web.get(f"/api/offers/{offer_id}").json()
     assert detail["title"] == "Data analyst (H/F)" and detail["application_id"] is None
-    assert web.get("/api/offers/999999").status_code == 404
+    missing = web.get("/api/offers/999999")
+    assert missing.status_code == 404 and missing.json()["detail"]["code"] == "offer_not_found"
 
     first = web.post(f"/api/offers/{offer_id}/fit").json()
     second = web.post(f"/api/offers/{offer_id}/fit").json()
-    assert (first["cached"], second["cached"], web.calls) == (False, True, ["fit"])
+    assert (first["cached"], second["cached"], web.calls) == (False, True, ["fit-fr"])
     by_skill = {r["skill"]: r for r in second["requirements"]}
     assert by_skill["dbt"]["status"] == "to_confirm" and by_skill["dbt"]["note"]
+    assert by_skill["dbt"]["profile_evidence_found"] is False
+    assert by_skill["SQL"]["profile_evidence_found"] is True
+
+    english = web.post(f"/api/offers/{offer_id}/fit", params={"lang": "en"}).json()
+    assert english["cached"] is False and web.calls == ["fit-fr", "fit-en"]  # its own cache
+    assert web.post(f"/api/offers/{offer_id}/fit", params={"lang": "de"}).status_code == 422
 
     draft = web.post(f"/api/offers/{offer_id}/draft").json()
     assert draft["subject"] == DRAFT["subject"]
@@ -117,9 +150,12 @@ def test_offer_detail_fit_cache_and_draft(web):
 def test_claude_is_never_asked_without_a_profile_or_against_a_site_refusal(web):
     offer_id = next(iter(ids_by_title(web, {"Cuisinier"}).values()))
     web.services.allows_ai_input = lambda url: False
-    assert web.post(f"/api/offers/{offer_id}/fit").status_code == 403
+    refused = web.post(f"/api/offers/{offer_id}/fit")
+    assert refused.status_code == 403 and refused.json()["detail"]["code"] == "ai_input_refused"
     web.services.profile_path = None
-    assert web.post(f"/api/offers/{offer_id}/draft").status_code == 409
+    no_profile = web.post(f"/api/offers/{offer_id}/draft")
+    assert no_profile.status_code == 409
+    assert no_profile.json()["detail"]["code"] == "profile_missing"
     assert web.calls == []
 
 
@@ -133,7 +169,8 @@ def test_application_tracker(web):
         "/api/applications", json={"company": "Boulangerie Martin", "channel": "sur place"}
     )
     assert spontaneous.status_code == 201
-    assert web.post("/api/applications", json={"notes": "?"}).status_code == 422
+    nothing = web.post("/api/applications", json={"notes": "?"})
+    assert nothing.status_code == 422 and nothing.json()["detail"]["code"] == "company_required"
     assert web.post("/api/applications", json={"company": "X", "status": "lost"}).status_code == 422
 
     sent = web.patch(f"/api/applications/{tracked['id']}", json={"status": "sent"}).json()
@@ -148,6 +185,28 @@ def test_application_tracker(web):
     assert web.delete(f"/api/applications/{tracked['id']}").status_code == 204
     assert web.delete(f"/api/applications/{tracked['id']}").status_code == 404
     assert web.patch("/api/applications/999999", json={"notes": "x"}).status_code == 404
+
+
+def test_towns_with_offers_whatever_the_spelling(web, conn):
+    lat, lon = MULHOUSE
+    db.upsert_offers(
+        conn,
+        [
+            Offer(
+                "test",
+                f"t{i}",
+                f"https://example.org/t{i}",
+                "Serveur",
+                kinds=frozenset({Kind.JOB}),
+                location=Location(city=city, latitude=lat, longitude=lon, precision="town"),
+            )
+            for i, city in enumerate(["Mulhouse", "Mulhouse", "MULHOUSE"])
+        ],
+    )
+    towns = web.get("/api/coverage").json()
+    assert towns[0] == {
+        "city": "Mulhouse", "count": 3, "lat": pytest.approx(lat), "lon": pytest.approx(lon)
+    }  # fmt: skip
 
 
 def test_employers_layers(web, conn):

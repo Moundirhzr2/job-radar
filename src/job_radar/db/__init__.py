@@ -182,23 +182,28 @@ def get_offer(conn: psycopg.Connection, ref: str) -> StoredOffer | None:
 
 
 def get_fit(
-    conn: psycopg.Connection, offer: StoredOffer, profile_hash: str, model: str
+    conn: psycopg.Connection, offer: StoredOffer, profile_hash: str, model: str, lang: str = "fr"
 ) -> dict | None:
     row = conn.execute(
         "SELECT result FROM offer_fits WHERE offer_id = %s AND offer_hash = %s"
-        " AND profile_hash = %s AND model = %s",
-        (offer.id, offer.content_hash, profile_hash, model),
+        " AND profile_hash = %s AND model = %s AND lang = %s",
+        (offer.id, offer.content_hash, profile_hash, model, lang),
     ).fetchone()
     return row[0] if row else None
 
 
 def save_fit(
-    conn: psycopg.Connection, offer: StoredOffer, profile_hash: str, model: str, result: dict
+    conn: psycopg.Connection,
+    offer: StoredOffer,
+    profile_hash: str,
+    model: str,
+    result: dict,
+    lang: str = "fr",
 ) -> None:
     conn.execute(
-        "INSERT INTO offer_fits (offer_id, offer_hash, profile_hash, model, result)"
-        " VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
-        (offer.id, offer.content_hash, profile_hash, model, Jsonb(result)),
+        "INSERT INTO offer_fits (offer_id, offer_hash, profile_hash, model, lang, result)"
+        " VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING",
+        (offer.id, offer.content_hash, profile_hash, model, lang, Jsonb(result)),
     )
 
 
@@ -236,6 +241,7 @@ class RadarOffer:
     weekly_hours: float | None = None
     latitude: float | None = None
     longitude: float | None = None
+    source: str = ""
 
 
 def offers_within(
@@ -256,7 +262,7 @@ def offers_within(
         SELECT o.id, o.title, o.company_name, o.url, o.city, o.kinds,
                ST_Distance(o.location, here.p) / 1000 AS distance_km, o.published_at,
                o.location_precision, o.contact, o.weekly_hours,
-               ST_Y(o.location::geometry), ST_X(o.location::geometry)
+               ST_Y(o.location::geometry), ST_X(o.location::geometry), o.source
         FROM offers o, here
         WHERE ST_DWithin(o.location, here.p, %(radius_m)s) AND o.closed_at IS NULL
           AND (%(kinds)s::text[] IS NULL OR o.kinds && %(kinds)s::text[])
@@ -272,6 +278,29 @@ def offers_within(
         },
     ).fetchall()
     return [RadarOffer(*row) for row in rows]
+
+
+def offer_towns(conn: psycopg.Connection, limit: int = 8) -> list[tuple[str, int, float, float]]:
+    """Towns with the most open offers on the map: where the radar already has something to show.
+
+    Spellings differ between sources ("Mulhouse", "MULHOUSE"): grouped without case, named the
+    way most offers name it, placed at the town centre when some offers are placed there.
+    """
+    return conn.execute(
+        """
+        SELECT mode() WITHIN GROUP (ORDER BY city), count(*),
+               coalesce(avg(ST_Y(location::geometry)) FILTER (WHERE location_precision = 'town'),
+                        avg(ST_Y(location::geometry))),
+               coalesce(avg(ST_X(location::geometry)) FILTER (WHERE location_precision = 'town'),
+                        avg(ST_X(location::geometry)))
+        FROM offers
+        WHERE closed_at IS NULL AND location IS NOT NULL AND city <> ''
+        GROUP BY lower(city)
+        ORDER BY count(*) DESC, 1
+        LIMIT %s
+        """,
+        (limit,),
+    ).fetchall()
 
 
 def directory_url(siren: str) -> str:
@@ -600,6 +629,13 @@ def _with_dates(values: dict, current: Application | None = None) -> dict:
     applied = values.get("applied_on", current.applied_on if current else None)
     if status == "sent" and applied is None:
         values["applied_on"] = applied = date.today()
+    if (
+        status == "followed_up"
+        and current is not None
+        and current.status != "followed_up"
+        and "follow_up_on" not in values
+    ):  # followed up today: the next follow-up is due a week from now, not on the old date
+        values["follow_up_on"] = date.today() + timedelta(days=FOLLOW_UP_DAYS)
     follow_up = values.get("follow_up_on", current.follow_up_on if current else None)
     if status in ("sent", "followed_up") and follow_up is None and applied is not None:
         values["follow_up_on"] = applied + timedelta(days=FOLLOW_UP_DAYS)

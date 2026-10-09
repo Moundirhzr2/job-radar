@@ -85,8 +85,8 @@ couche entreprises et le contact direct.
   **pgvector** (recherche sémantique).
 - **Claude** : extraction des compétences en données structurées, fiches entreprises sourcées,
   analyse d'écart CV/offre, brouillons de message.
-- **Application web** avec la carte et le radar (choix du framework à faire : Streamlit pour
-  aller vite, ou Next.js pour un vrai produit multi-utilisateurs).
+- **Application web** : une API FastAPI et une page en JavaScript sans framework (Leaflet, fond
+  Plan IGN), servies en local ; en français et en anglais.
 - **GitHub Actions** : tests à chaque push, collecte planifiée.
 
 ## La partie RAG : comment elle sera construite
@@ -123,7 +123,7 @@ mesurée avant qu'on fasse confiance à une réponse.
 | 5 | Offres France Travail + entreprises qui recrutent (La Bonne Boîte) | Fait : 3 681 offres (dont 514 alternances à moins de 100 km) et 6 employeurs probables autour de Mulhouse ; heures par semaine, offres retirées |
 | 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | Fait : nDCG@10 0,49 → 0,73 (réécriture + re-ranking) sur 129 jugements, seuil de confiance 0,2 calibré |
 | 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | En partie : `radar fit` (acquis, à confirmer, manques, mini-projets) et `radar draft` (brouillon au contact publié, faits vérifiés) ; fiche entreprise à faire |
-| 8 | Application web avec la carte, suivi des candidatures | À faire |
+| 8 | Application web avec la carte, suivi des candidatures | Fait : carte radar (cercles de distance, regroupement selon le zoom), liste au clavier, recherche, détail d'une offre (analyse, brouillon), suivi par prochaine action ; français et anglais, mode sombre, 0 violation axe-core |
 | 9 | Démo en ligne, mesures, ligne de CV | À faire |
 
 Qualité des données repérée sur France Travail : des « alternances » sont publiées par des écoles

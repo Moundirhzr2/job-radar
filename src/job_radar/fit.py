@@ -29,10 +29,15 @@ from .rewrite import FALLBACK_BETA, client
 
 DEFAULT_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5-5")
 
+LANGUAGES = {
+    "fr": 'Write every field in French, addressing the student as "tu"',
+    "en": 'Write every field in British English, addressing the student as "you"',
+}
+
 SYSTEM = """\
 You help a student in France see how well they fit one job offer and what to do about the
-gaps. You receive the student's profile (their CV) and the offer. Write every field in French,
-addressing the student as "tu".
+gaps. You receive the student's profile (their CV) and the offer. {language}, except evidence
+and profile_evidence, which are copied exactly as written, in their own language.
 
 1. requirements: what the offer concretely asks for: technical skills, tools, languages,
    degree or level, certifications, and soft skills only when the offer names them. At most
@@ -69,11 +74,16 @@ class Requirement(BaseModel):
     suggestion: str | None = Field(description="to_confirm only: a CV line to add if true")
     # set by check(), never part of the schema the model fills
     _evidence_found: bool = PrivateAttr(default=True)
+    _profile_found: bool = PrivateAttr(default=True)
     _note: str = PrivateAttr(default="")
 
     @property
     def evidence_found(self) -> bool:
         return self._evidence_found
+
+    @property
+    def profile_evidence_found(self) -> bool:
+        return self._profile_found
 
     @property
     def note(self) -> str:
@@ -116,6 +126,7 @@ def check(fit: Fit, offer_text: str, profile: str) -> Fit:
     for r in fit.requirements:
         r._evidence_found = quoted(r.evidence, offer_text)
         in_profile = quoted(r.profile_evidence, profile)
+        r._profile_found = in_profile or not r.profile_evidence
         if r.status == "covered" and not in_profile:
             r.status = "to_confirm"
         # recomputed on every check, so a cached analysis still says why
@@ -149,13 +160,14 @@ def analyse(
     profile: str,
     api: anthropic.Anthropic | None = None,
     model: str = DEFAULT_MODEL,
+    lang: str = "fr",
 ) -> Fit:
     if not profile.strip():
         raise ValueError("Sans profil, il n'y a rien à comparer : renseigner data/profile.md.")
     response = (api or client()).beta.messages.parse(
         model=model,
         max_tokens=16000,
-        system=SYSTEM,
+        system=SYSTEM.format(language=LANGUAGES[lang]),
         messages=[
             {
                 "role": "user",
@@ -177,21 +189,23 @@ def fit_offer(
     conn,
     offer,
     profile: str,
-    analyse_fn: Callable[[str, str], Fit] = analyse,
+    analyse_fn: Callable[..., Fit] = analyse,
     model: str = DEFAULT_MODEL,
     again: bool = False,
+    lang: str = "fr",
 ) -> tuple[Fit, bool]:
     """The fit of a stored offer, from the cache when this version of the offer and of the
-    profile was already analysed (an analysis costs a Claude call). Returns (fit, cached)."""
+    profile was already analysed in this language (an analysis costs a Claude call).
+    Returns (fit, cached)."""
     from . import db
 
     text = offer_text(
         offer.title, offer.company, offer.city, offer.kinds, offer.weekly_hours, offer.description
     )
     profile_hash = hashlib.sha256(profile.encode()).hexdigest()
-    cached = None if again else db.get_fit(conn, offer, profile_hash, model)
+    cached = None if again else db.get_fit(conn, offer, profile_hash, model, lang)
     if cached:
         return check(Fit(**cached), text, profile), True
-    fit = analyse_fn(text, profile)
-    db.save_fit(conn, offer, profile_hash, model, fit.model_dump())
+    fit = analyse_fn(text, profile, lang=lang)
+    db.save_fit(conn, offer, profile_hash, model, fit.model_dump(), lang)
     return fit, False

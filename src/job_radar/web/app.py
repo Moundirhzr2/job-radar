@@ -2,11 +2,12 @@
 
 import os
 import threading
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from collections.abc import Callable, Iterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import date
+from hashlib import sha256
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -37,6 +38,7 @@ Lat = Annotated[float, Query(ge=-90, le=90)]
 Lon = Annotated[float, Query(ge=-180, le=180)]
 Radius = Annotated[float, Query(gt=0, le=200)]
 Kinds = Annotated[list[Kind] | None, Query()]
+Lang = Literal["fr", "en"]
 
 
 def _lazy(factory: Callable[[], object]) -> Callable[[], object]:
@@ -70,10 +72,10 @@ def _rewrite(request: str, profile: str):
     return rewrite(request, profile)
 
 
-def _analyse(offer: str, profile: str):
+def _analyse(offer: str, profile: str, lang: str = "fr"):
     from ..fit import analyse
 
-    return analyse(offer, profile)
+    return analyse(offer, profile, lang=lang)
 
 
 def _draft(offer: str, contact: str, profile: str):
@@ -103,7 +105,7 @@ class Services:
     embedder: Callable[[], object] = field(default_factory=lambda: _lazy(_embedder))
     reranker: Callable[[], object] = field(default_factory=lambda: _lazy(_reranker))
     rewrite: Callable[[str, str], object] | None = _rewrite
-    analyse: Callable[[str, str], object] = _analyse
+    analyse: Callable[..., object] = _analyse  # (offer, profile, lang="fr")
     draft: Callable[[str, str, str], object] = _draft
     allows_ai_input: Callable[[str], bool] = field(default_factory=_allows_ai_input)
 
@@ -111,6 +113,12 @@ class Services:
         if self.profile_path and self.profile_path.exists():
             return self.profile_path.read_text(encoding="utf-8")
         return ""
+
+
+def fail(status: int, code: str, message: str) -> HTTPException:
+    """An error the page can name in its own language: a stable code, and a French sentence for
+    whoever reads the API directly."""
+    return HTTPException(status, {"code": code, "message": message})
 
 
 # --- request bodies --------------------------------------------------------------------------
@@ -148,6 +156,7 @@ class ApplicationPatch(BaseModel):
 def _offer_json(o: db.RadarOffer) -> dict:
     return {
         "id": o.id,
+        "source": o.source,
         "title": o.title,
         "company": o.company,
         "city": o.city,
@@ -227,7 +236,11 @@ def _stats(applications: list[db.Application]) -> dict:
 
 
 def _requirement_json(r) -> dict:
-    return r.model_dump() | {"evidence_found": r.evidence_found, "note": r.note}
+    return r.model_dump() | {
+        "evidence_found": r.evidence_found,
+        "profile_evidence_found": r.profile_evidence_found,
+        "note": r.note,
+    }
 
 
 # --- the app ---------------------------------------------------------------------------------
@@ -260,20 +273,42 @@ def create_app(services: Services | None = None) -> FastAPI:
     app.state.services = services
     app.state.pool = pool
 
+    rewrites: OrderedDict[tuple[str, str], object] = OrderedDict()
+    rewrites_lock = threading.Lock()
+
+    def rewrite_once(request_text: str, profile: str):
+        """Claude reads a given request once: changing the radius or the contract kinds later
+        searches again without paying for the same rewrite (kept for the last 64 requests)."""
+        key = (" ".join(request_text.casefold().split()), sha256(profile.encode()).hexdigest())
+        with rewrites_lock:
+            if key in rewrites:
+                rewrites.move_to_end(key)
+                return rewrites[key]
+        result = services.rewrite(request_text, profile)  # failures are not kept
+        with rewrites_lock:
+            rewrites[key] = result
+            while len(rewrites) > 64:
+                rewrites.popitem(last=False)
+        return result
+
     def stored_offer(conn: psycopg.Connection, offer_id: int) -> db.StoredOffer:
         offer = db.get_offer(conn, str(offer_id))
         if offer is None:
-            raise HTTPException(404, "Offre introuvable.")
+            raise fail(404, "offer_not_found", "Offre introuvable.")
         return offer
 
     def profile_for_claude(offer: db.StoredOffer) -> str:
         profile = services.profile()
         if not profile.strip():
-            raise HTTPException(
-                409, "Ton profil manque : mets ton CV en texte dans data/profile.md."
+            raise fail(
+                409,
+                "profile_missing",
+                "Ton profil manque : mets ton CV en texte dans data/profile.md.",
             )
         if offer.source != "france_travail" and not services.allows_ai_input(offer.url):
-            raise HTTPException(403, "Ce site refuse que ses pages servent d'entrée à une IA.")
+            raise fail(
+                403, "ai_input_refused", "Ce site refuse que ses pages servent d'entrée à une IA."
+            )
         return profile
 
     @app.get("/api/towns")
@@ -281,7 +316,9 @@ def create_app(services: Services | None = None) -> FastAPI:
         try:
             found = services.geocoder.search(q, limit=6)
         except GeocodingUnavailable:
-            raise HTTPException(503, "La géolocalisation ne répond pas, réessaie.") from None
+            raise fail(
+                503, "geocoding_unavailable", "La géolocalisation ne répond pas, réessaie."
+            ) from None
         return [
             {
                 "name": t.name,
@@ -291,6 +328,14 @@ def create_app(services: Services | None = None) -> FastAPI:
                 "lon": t.longitude,
             }
             for t in found
+        ]
+
+    @app.get("/api/coverage")
+    def coverage(conn: Conn):
+        """Towns with the most open offers, to start from when no town is chosen yet."""
+        return [
+            {"city": city, "count": count, "lat": lat, "lon": lon}
+            for city, count, lat, lon in db.offer_towns(conn)
         ]
 
     @app.get("/api/radar")
@@ -359,11 +404,11 @@ def create_app(services: Services | None = None) -> FastAPI:
         rewriter = services.rewrite if rewrite and services.rewrite else None
         if rewriter:
             try:
-                rewritten = rewriter(q, profile)
+                rewritten = rewrite_once(q, profile)
                 rewriter = lambda request, prof: rewritten  # noqa: E731  (computed once)
             except Exception as exc:  # no key, no credit, no network: search without Claude
                 rewriter = None
-                notice = f"Réécriture indisponible ({type(exc).__name__}) : recherche sans Claude."
+                notice = {"code": "rewrite_unavailable", "error": type(exc).__name__}
         results = find(
             conn,
             q,
@@ -391,6 +436,7 @@ def create_app(services: Services | None = None) -> FastAPI:
             "results": [
                 {
                     "id": c.id,
+                    "source": c.source,
                     "title": c.title,
                     "company": c.company,
                     "city": c.city,
@@ -429,15 +475,15 @@ def create_app(services: Services | None = None) -> FastAPI:
         }
 
     @app.post("/api/offers/{offer_id}/fit")
-    def fit(conn: Conn, offer_id: int, again: bool = False):
+    def fit(conn: Conn, offer_id: int, again: bool = False, lang: Lang = "fr"):
         from ..fit import fit_offer
 
         o = stored_offer(conn, offer_id)
         profile = profile_for_claude(o)
         try:
-            result, cached = fit_offer(conn, o, profile, services.analyse, again=again)
+            result, cached = fit_offer(conn, o, profile, services.analyse, again=again, lang=lang)
         except Exception as exc:
-            raise HTTPException(502, f"Analyse impossible ({type(exc).__name__}).") from exc
+            raise fail(502, "fit_failed", f"Analyse impossible ({type(exc).__name__}).") from exc
         return {
             "summary": result.summary,
             "requirements": [_requirement_json(r) for r in result.requirements],
@@ -451,13 +497,15 @@ def create_app(services: Services | None = None) -> FastAPI:
 
         o = stored_offer(conn, offer_id)
         if o.closed:
-            raise HTTPException(410, "Cette offre n'est plus en ligne.")
+            raise fail(410, "offer_closed", "Cette offre n'est plus en ligne.")
         profile = profile_for_claude(o)
         text = offer_text(o.title, o.company, o.city, o.kinds, o.weekly_hours, o.description)
         try:
             result = services.draft(text, o.contact, profile)
         except Exception as exc:
-            raise HTTPException(502, f"Brouillon impossible ({type(exc).__name__}).") from exc
+            raise fail(
+                502, "draft_failed", f"Brouillon impossible ({type(exc).__name__})."
+            ) from exc
         return {
             "subject": result.subject,
             "body": result.body,
@@ -475,23 +523,23 @@ def create_app(services: Services | None = None) -> FastAPI:
     def add_application(conn: Conn, body: ApplicationIn):
         values = body.model_dump(exclude_unset=True)
         if not values.get("offer_id") and not (values.get("company") or "").strip():
-            raise HTTPException(422, "Une offre, ou au moins le nom de l'entreprise.")
+            raise fail(422, "company_required", "Une offre, ou au moins le nom de l'entreprise.")
         try:
             return _application_json(db.add_application(conn, **values))
         except ValueError as exc:
-            raise HTTPException(422, str(exc)) from None
+            raise fail(422, "invalid_application", str(exc)) from None
 
     @app.patch("/api/applications/{application_id}")
     def update_application(conn: Conn, application_id: int, body: ApplicationPatch):
         updated = db.update_application(conn, application_id, **body.model_dump(exclude_unset=True))
         if updated is None:
-            raise HTTPException(404, "Candidature introuvable.")
+            raise fail(404, "application_not_found", "Candidature introuvable.")
         return _application_json(updated)
 
     @app.delete("/api/applications/{application_id}", status_code=204)
     def delete_application(conn: Conn, application_id: int):
         if not db.delete_application(conn, application_id):
-            raise HTTPException(404, "Candidature introuvable.")
+            raise fail(404, "application_not_found", "Candidature introuvable.")
         return Response(status_code=204)
 
     @app.get("/", include_in_schema=False)

@@ -99,10 +99,24 @@ CREATE TABLE IF NOT EXISTS offer_fits (
     offer_hash    text NOT NULL,
     profile_hash  text NOT NULL,
     model         text NOT NULL,
+    lang          text NOT NULL DEFAULT 'fr',  -- langue dans laquelle l'analyse est écrite
     result        jsonb NOT NULL,
     created_at    timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (offer_id, offer_hash, profile_hash, model)
+    PRIMARY KEY (offer_id, offer_hash, profile_hash, model, lang)
 );
+-- Bases créées avant la version anglaise : la langue entre dans la clé.
+ALTER TABLE offer_fits ADD COLUMN IF NOT EXISTS lang text NOT NULL DEFAULT 'fr';
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_index i
+        JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY (i.indkey)
+        WHERE i.indrelid = 'offer_fits'::regclass AND i.indisprimary AND a.attname = 'lang'
+    ) THEN
+        ALTER TABLE offer_fits DROP CONSTRAINT offer_fits_pkey;
+        ALTER TABLE offer_fits ADD PRIMARY KEY (offer_id, offer_hash, profile_hash, model, lang);
+    END IF;
+END $$;
 
 -- Potentiel d'embauche d'un établissement pour un métier (France Travail - La Bonne Boîte).
 CREATE TABLE IF NOT EXISTS hiring_potential (

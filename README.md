@@ -42,6 +42,8 @@ même situation.
   mesuré, décrit plus bas.
 - **Mon profil face à une offre** : ce que j'ai déjà, ce qui est à confirmer, ce qui me manque et
   un mini-projet pour l'apprendre ; puis un brouillon de message à la personne qui recrute.
+- **Une interface web**, en français et en anglais : la carte du radar, la liste, la recherche,
+  le détail d'une offre et le suivi de mes candidatures.
 
 ```bash
 docker compose up -d --wait        # PostgreSQL 17 + PostGIS + pgvector
@@ -56,6 +58,7 @@ uv run radar index                                               # vecteurs des 
 uv run radar search "alternance data analyst" --town Mulhouse    # la recherche RAG
 uv run radar fit 629                                             # mon profil face à l'offre n°629
 uv run radar draft 629                                           # brouillon au recruteur
+uv run radar web                                                 # tout cela dans le navigateur
 ```
 
 Essais sur données réelles autour de Mulhouse : 3 681 offres lues (France Travail et sites
@@ -163,6 +166,37 @@ Rien n'est pris sur parole : chaque citation (de l'offre comme de mon profil) es
 pour mot. Une compétence « acquise » dont la citation est introuvable dans mon profil redevient
 « à confirmer », et un fait du message qui n'est pas dans mon profil est signalé avant l'envoi.
 
+## L'interface web
+
+`uv run radar web` ouvre le radar dans le navigateur, sur http://127.0.0.1:8000. L'adresse est
+locale par défaut : le suivi des candidatures contient mes données.
+
+![Recherche « alternance data » autour de Mulhouse : les résultats sont numérotés dans la liste et sur la carte](docs/web-search-fr.jpg)
+
+- **La carte** : le rayon dessiné comme un radar (cercles de distance, l'extérieur grisé), les
+  offres regroupées selon le zoom, les entreprises qui embauchent souvent, et les résultats d'une
+  recherche numérotés comme dans la liste. Fond Plan IGN (Géoplateforme, sans clé).
+- **La liste, au clavier** : tout ce que montre la carte est aussi dans la liste, filtrable par
+  commune et par type de contrat ; chaque offre a son adresse, qu'on peut ouvrir dans un nouvel
+  onglet.
+- **Le détail d'une offre** : le lien vers la source pour postuler, l'analyse de mon profil et le
+  brouillon de message, avec les mêmes vérifications que la ligne de commande.
+- **Le suivi des candidatures**, rangé par prochaine action : à relancer, à envoyer, en attente,
+  entretiens. Une candidature envoyée planifie sa relance une semaine plus tard, une relance
+  planifie la suivante, et une suppression peut s'annuler pendant quelques secondes.
+- **En français et en anglais** : le choix est gardé dans l'adresse et dans le navigateur.
+  L'analyse de profil est alors écrite par Claude dans cette langue ; le message au recruteur
+  reste dans la langue de l'offre.
+
+![Une offre en anglais et en mode sombre : lien vers France Travail, ajout au suivi, texte de l'offre tel que publié](docs/web-offer-en-dark.jpg)
+
+L'état de la page est dans l'adresse (commune, rayon, contrats, recherche, offre ouverte, langue) :
+une vue se garde en favori. Toute la page s'utilise au clavier, suit le mode sombre et réduit les
+animations quand le système le demande ; un audit axe-core ne relève aucune violation, en
+français comme en anglais, sur ordinateur et sur téléphone (Chromium). Polices, icônes et
+bibliothèque de carte sont servies par l'application elle-même, sous licences libres (Atkinson
+Hyperlegible Next, Phosphor, Leaflet) : seul le fond de carte vient de l'IGN.
+
 ## Les règles
 
 Le projet ne fait que ce qui est légal et respectueux des sites et des personnes :
@@ -188,7 +222,8 @@ Le détail du produit, des sources, de la partie RAG et de la feuille de route e
 docker compose up -d --wait && uv run pytest
 ```
 
-110 tests : lecture des pages et des flux, règles robots.txt, heures de travail sur des
+125 tests : lecture des pages et des flux, règles robots.txt, heures de travail sur des
 formulations d'offres réelles, géolocalisation, reprise sur erreur réseau, appels à Claude face à
-un faux serveur (sans clé ni réseau), et tests d'intégration sur un vrai PostgreSQL + PostGIS +
-pgvector. La CI GitHub Actions les exécute à chaque push.
+un faux serveur (sans clé ni réseau), l'API web et le suivi des candidatures, et tests
+d'intégration sur un vrai PostgreSQL + PostGIS + pgvector. La CI GitHub Actions les exécute à
+chaque push.
