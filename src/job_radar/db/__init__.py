@@ -6,6 +6,7 @@ import hashlib
 import json
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import date, timedelta
 from importlib.resources import files
 
 import psycopg
@@ -233,6 +234,8 @@ class RadarOffer:
     precision: str
     contact: str
     weekly_hours: float | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 def offers_within(
@@ -252,7 +255,8 @@ def offers_within(
         WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p)
         SELECT o.id, o.title, o.company_name, o.url, o.city, o.kinds,
                ST_Distance(o.location, here.p) / 1000 AS distance_km, o.published_at,
-               o.location_precision, o.contact, o.weekly_hours
+               o.location_precision, o.contact, o.weekly_hours,
+               ST_Y(o.location::geometry), ST_X(o.location::geometry)
         FROM offers o, here
         WHERE ST_DWithin(o.location, here.p, %(radius_m)s) AND o.closed_at IS NULL
           AND (%(kinds)s::text[] IS NULL OR o.kinds && %(kinds)s::text[])
@@ -356,6 +360,8 @@ class RadarCompany:
     city: str
     distance_km: float
     officers: list[str]
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 def companies_within(
@@ -372,7 +378,8 @@ def companies_within(
         WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p),
         nearest AS (
             SELECT DISTINCT ON (e.company_id) e.company_id, e.city,
-                   ST_Distance(e.location, here.p) / 1000 AS distance_km
+                   ST_Distance(e.location, here.p) / 1000 AS distance_km,
+                   ST_Y(e.location::geometry) AS lat, ST_X(e.location::geometry) AS lon
             FROM establishments e, here
             WHERE ST_DWithin(e.location, here.p, %(radius_m)s)
             ORDER BY e.company_id, ST_Distance(e.location, here.p)
@@ -380,13 +387,14 @@ def companies_within(
         SELECT c.id, c.siren, c.name, coalesce(c.naf_code, ''),
                coalesce(c.headcount_range, 'NN'), n.city, n.distance_km,
                coalesce(array_agg(k.value || ' (' || k.label || ')' ORDER BY k.id)
-                        FILTER (WHERE k.id IS NOT NULL), '{}')
+                        FILTER (WHERE k.id IS NOT NULL), '{}'),
+               n.lat, n.lon
         FROM nearest n
         JOIN companies c ON c.id = n.company_id
         LEFT JOIN company_contacts k ON k.company_id = c.id AND k.kind = 'registry_officer'
         WHERE %(prefixes)s::text[] IS NULL
            OR c.naf_code LIKE ANY (SELECT p || '%%' FROM unnest(%(prefixes)s::text[]) p)
-        GROUP BY c.id, n.city, n.distance_km
+        GROUP BY c.id, n.city, n.distance_km, n.lat, n.lon
         ORDER BY n.distance_km
         LIMIT %(limit)s
         """,
@@ -484,6 +492,8 @@ class LikelyEmployer:
     score: float
     is_high_potential: bool
     accepts_email: bool
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 def likely_employers(
@@ -500,7 +510,7 @@ def likely_employers(
         WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p)
         SELECT e.siret, c.name, coalesce(c.naf_code, ''), coalesce(e.city, ''),
                ST_Distance(e.location, here.p) / 1000, h.rome, h.score, h.is_high_potential,
-               h.accepts_email
+               h.accepts_email, ST_Y(e.location::geometry), ST_X(e.location::geometry)
         FROM hiring_potential h
         JOIN establishments e ON e.siret = h.siret
         JOIN companies c ON c.id = e.company_id, here
@@ -532,3 +542,115 @@ def offers_to_embed(conn: psycopg.Connection, limit: int = 5000) -> list[tuple]:
 def set_embeddings(conn: psycopg.Connection, rows: Sequence[tuple[int, object]]) -> None:
     with conn.transaction(), conn.cursor() as cur:
         cur.executemany("UPDATE offers SET embedding = %s WHERE id = %s", [(v, i) for i, v in rows])
+
+
+# --- the application tracker -------------------------------------------------------------
+
+STATUSES = ("to_apply", "sent", "followed_up", "interview", "offer", "rejected", "dropped")
+FOLLOW_UP_DAYS = 7  # a week without an answer: time to follow up
+
+_APPLICATION_FIELDS = (
+    "offer_id", "siret", "company", "title", "url", "status", "channel", "contact",
+    "applied_on", "follow_up_on", "notes",
+)  # fmt: skip
+
+
+@dataclass(frozen=True)
+class Application:
+    id: int
+    offer_id: int | None
+    siret: str | None
+    company: str
+    title: str
+    url: str
+    status: str
+    channel: str
+    contact: str
+    applied_on: object
+    follow_up_on: object
+    notes: str
+    created_at: object
+    updated_at: object
+    offer_open: bool | None  # None: not linked to an offer; False: the offer was withdrawn
+
+
+_SELECT_APPLICATIONS = """
+SELECT a.id, a.offer_id, a.siret, a.company, a.title, a.url, a.status, a.channel, a.contact,
+       a.applied_on, a.follow_up_on, a.notes, a.created_at, a.updated_at,
+       CASE WHEN a.offer_id IS NULL THEN NULL ELSE o.closed_at IS NULL END
+FROM applications a LEFT JOIN offers o ON o.id = a.offer_id
+"""
+
+
+def list_applications(conn: psycopg.Connection) -> list[Application]:
+    rows = conn.execute(
+        _SELECT_APPLICATIONS + " ORDER BY a.follow_up_on NULLS LAST, a.updated_at DESC"
+    ).fetchall()
+    return [Application(*row) for row in rows]
+
+
+def get_application(conn: psycopg.Connection, application_id: int) -> Application | None:
+    row = conn.execute(_SELECT_APPLICATIONS + " WHERE a.id = %s", (application_id,)).fetchone()
+    return Application(*row) if row else None
+
+
+def _with_dates(values: dict, current: Application | None = None) -> dict:
+    """Sending an application dates it and plans the follow-up, unless the student set them."""
+    status = values.get("status", current.status if current else "to_apply")
+    applied = values.get("applied_on", current.applied_on if current else None)
+    if status == "sent" and applied is None:
+        values["applied_on"] = applied = date.today()
+    follow_up = values.get("follow_up_on", current.follow_up_on if current else None)
+    if status in ("sent", "followed_up") and follow_up is None and applied is not None:
+        values["follow_up_on"] = applied + timedelta(days=FOLLOW_UP_DAYS)
+    if status in ("interview", "offer", "rejected", "dropped") and "follow_up_on" not in values:
+        values["follow_up_on"] = None  # an answer came, or the student stopped
+    return values
+
+
+def add_application(conn: psycopg.Connection, **values) -> Application:
+    """Track an offer (offer_id) or a spontaneous application to an establishment (siret)."""
+    unknown = set(values) - set(_APPLICATION_FIELDS)
+    if unknown:
+        raise ValueError(f"unknown fields: {sorted(unknown)}")
+    if values.get("offer_id") is not None:
+        offer = conn.execute(
+            "SELECT title, company_name, url, contact FROM offers WHERE id = %s",
+            (values["offer_id"],),
+        ).fetchone()
+        if offer is None:
+            raise ValueError("unknown offer")
+        # copied, so that the tracker still says what it was once the offer is withdrawn
+        for field_name, value in zip(("title", "company", "url", "contact"), offer, strict=True):
+            values.setdefault(field_name, value)
+    values = _with_dates(values)
+    names = list(values)
+    (new_id,) = conn.execute(
+        f"INSERT INTO applications ({', '.join(names)}) "
+        f"VALUES ({', '.join('%(' + n + ')s' for n in names)}) RETURNING id",
+        values,
+    ).fetchone()
+    return get_application(conn, new_id)
+
+
+def update_application(
+    conn: psycopg.Connection, application_id: int, **values
+) -> Application | None:
+    current = get_application(conn, application_id)
+    if current is None:
+        return None
+    unknown = set(values) - set(_APPLICATION_FIELDS) - {"offer_id", "siret"}
+    if unknown or "offer_id" in values or "siret" in values:
+        raise ValueError("only the application's own fields can change")
+    values = _with_dates(dict(values), current)
+    if values:
+        sets = ", ".join(f"{n} = %({n})s" for n in values)
+        conn.execute(
+            f"UPDATE applications SET {sets}, updated_at = now() WHERE id = %(id)s",
+            {**values, "id": application_id},
+        )
+    return get_application(conn, application_id)
+
+
+def delete_application(conn: psycopg.Connection, application_id: int) -> bool:
+    return conn.execute("DELETE FROM applications WHERE id = %s", (application_id,)).rowcount > 0

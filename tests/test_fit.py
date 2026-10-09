@@ -63,6 +63,7 @@ def test_check_never_lets_an_unsupported_skill_pass():
     by = {r.skill: r for r in fit.requirements}
     assert by["SQL"].status == "covered" and by["SQL"].suggestion is None
     assert by["MySQL"].status == "to_confirm" and by["MySQL"].suggestion
+    assert by["MySQL"].note == ""  # its related quote is in the profile
     assert by["dbt"].status == "to_confirm"  # "dbt (2 ans)" is nowhere in the profile
     assert "introuvable" in by["dbt"].note
     assert by["Anglais"].profile_evidence is None and by["Anglais"].suggestion is None
@@ -112,3 +113,11 @@ def test_offer_lookup_and_fit_cache(conn):
     db.upsert_offers(conn, [offer("a", "Mulhouse", description="SQL et Python")])
     edited = db.get_offer(conn, str(o.id))
     assert db.get_fit(conn, edited, "profile-hash", "m") is None  # the offer changed
+
+
+def test_check_is_idempotent_so_a_cached_fit_keeps_its_notes():
+    fit = check(Fit(**json.loads(json.dumps(ANSWER))), OFFER, PROFILE)
+    again = check(Fit(**fit.model_dump()), OFFER, PROFILE)
+    assert [(r.status, r.note) for r in again.requirements] == [
+        (r.status, r.note) for r in fit.requirements
+    ]

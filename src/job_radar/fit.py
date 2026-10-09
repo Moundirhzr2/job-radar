@@ -15,9 +15,11 @@ presented as acquired.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import unicodedata
+from collections.abc import Callable
 from typing import Literal
 
 import anthropic
@@ -113,8 +115,11 @@ def check(fit: Fit, offer_text: str, profile: str) -> Fit:
     """Verify every quote; never let an unsupported skill pass as covered."""
     for r in fit.requirements:
         r._evidence_found = quoted(r.evidence, offer_text)
-        if r.status == "covered" and not quoted(r.profile_evidence, profile):
+        in_profile = quoted(r.profile_evidence, profile)
+        if r.status == "covered" and not in_profile:
             r.status = "to_confirm"
+        # recomputed on every check, so a cached analysis still says why
+        if r.status == "to_confirm" and r.profile_evidence and not in_profile:
             r._note = "citation introuvable dans ton profil : à vérifier"
         if r.status != "to_confirm":
             r.suggestion = None
@@ -166,3 +171,27 @@ def analyse(
     if response.stop_reason == "refusal" or response.parsed_output is None:
         raise FitRefused(f"stop_reason={response.stop_reason}")
     return check(response.parsed_output, offer, profile)
+
+
+def fit_offer(
+    conn,
+    offer,
+    profile: str,
+    analyse_fn: Callable[[str, str], Fit] = analyse,
+    model: str = DEFAULT_MODEL,
+    again: bool = False,
+) -> tuple[Fit, bool]:
+    """The fit of a stored offer, from the cache when this version of the offer and of the
+    profile was already analysed (an analysis costs a Claude call). Returns (fit, cached)."""
+    from . import db
+
+    text = offer_text(
+        offer.title, offer.company, offer.city, offer.kinds, offer.weekly_hours, offer.description
+    )
+    profile_hash = hashlib.sha256(profile.encode()).hexdigest()
+    cached = None if again else db.get_fit(conn, offer, profile_hash, model)
+    if cached:
+        return check(Fit(**cached), text, profile), True
+    fit = analyse_fn(text, profile)
+    db.save_fit(conn, offer, profile_hash, model, fit.model_dump())
+    return fit, False

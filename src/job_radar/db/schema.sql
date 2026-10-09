@@ -145,3 +145,23 @@ CREATE TABLE IF NOT EXISTS company_contacts (
     found_at    timestamptz NOT NULL DEFAULT now(),
     UNIQUE (company_id, kind, value)
 );
+
+-- Le suivi des candidatures : les données de l'étudiant, dans sa base, jamais publiées.
+CREATE TABLE IF NOT EXISTS applications (
+    id            bigserial PRIMARY KEY,
+    offer_id      bigint REFERENCES offers (id) ON DELETE SET NULL,
+    siret         text,                    -- candidature spontanée à un établissement
+    company       text NOT NULL DEFAULT '',
+    title         text NOT NULL DEFAULT '',  -- recopiés : ils restent si l'offre est retirée
+    url           text NOT NULL DEFAULT '',
+    status        text NOT NULL DEFAULT 'to_apply' CHECK (status IN (
+                      'to_apply', 'sent', 'followed_up', 'interview', 'offer', 'rejected',
+                      'dropped')),
+    channel       text NOT NULL DEFAULT '',  -- contact publié, site carrières, e-mail, sur place
+    contact       text NOT NULL DEFAULT '',
+    applied_on    date,
+    follow_up_on  date,                    -- prochaine relance prévue
+    notes         text NOT NULL DEFAULT '',
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    updated_at    timestamptz NOT NULL DEFAULT now()
+);

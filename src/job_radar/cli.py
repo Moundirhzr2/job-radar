@@ -365,18 +365,10 @@ def _offer_and_profile(args):
 
 
 def cmd_fit(args) -> None:
-    import hashlib
+    from .fit import fit_offer
 
-    from .fit import DEFAULT_MODEL, Fit, analyse, check
-
-    conn, offer, text, profile = _offer_and_profile(args)
-    profile_hash = hashlib.sha256(profile.encode()).hexdigest()
-    cached = None if args.again else db.get_fit(conn, offer, profile_hash, DEFAULT_MODEL)
-    if cached:
-        fit = check(Fit(**cached), text, profile)
-    else:
-        fit = analyse(text, profile)
-        db.save_fit(conn, offer, profile_hash, DEFAULT_MODEL, fit.model_dump())
+    conn, offer, _, profile = _offer_and_profile(args)
+    fit, _ = fit_offer(conn, offer, profile, again=args.again)
 
     print(f"{offer.title} — {offer.company or '?'} — {offer.city}  (#{offer.id})")
     print(f"{offer.url}\n")
@@ -429,6 +421,19 @@ def cmd_draft(args) -> None:
             print(f"  ✓ {fact.claim} — ton profil : « {fact.profile_quote} »")
         else:
             print(f"  ⚠ {fact.claim} — introuvable dans ton profil : vérifie avant d'envoyer")
+
+
+def cmd_web(args) -> None:
+    import uvicorn
+
+    from .web import create_app
+
+    if args.host not in ("127.0.0.1", "localhost"):
+        print(
+            "Attention : le suivi des candidatures et ton profil seront visibles depuis le réseau."
+        )
+    print(f"Job Radar : http://{args.host}:{args.port}  (Ctrl+C pour arrêter)")
+    uvicorn.run(create_app(), host=args.host, port=args.port, log_level="warning")
 
 
 def cmd_eval_import(args) -> None:
@@ -567,6 +572,11 @@ def main(argv: list[str] | None = None) -> None:
         "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
     )
     p.set_defaults(func=cmd_draft)
+
+    p = sub.add_parser("web", help="le radar dans le navigateur : carte, recherche, suivi")
+    p.add_argument("--host", default="127.0.0.1", help="127.0.0.1 : sur cet ordinateur seulement")
+    p.add_argument("--port", type=int, default=8000)
+    p.set_defaults(func=cmd_web)
 
     p = sub.add_parser("offers", help="le radar : les offres autour d'une commune")
     p.add_argument("--town", required=True)
