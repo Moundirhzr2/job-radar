@@ -215,3 +215,19 @@ def test_employers_layers(web, conn):
     ).json()
     assert found == {"hiring": [], "digital": []}  # none loaded in this database
     assert db.list_applications(conn) == []
+
+
+def test_the_web_api_returns_the_links(web):
+    found = web.get(
+        "/api/elsewhere",
+        params={"q": "data", "town": "Mulhouse", "radius_km": 30, "kind": ["internship"]},
+    )
+    assert found.status_code == 200
+    assert [link["site"] for link in found.json()] == [
+        "LinkedIn",
+        "Welcome to the Jungle",
+        "HelloWork",
+        "Indeed",
+    ]
+    assert "f_JT=I" in found.json()[0]["url"]
+    assert web.get("/api/elsewhere", params={"q": "data", "town": ""}).status_code == 422

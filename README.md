@@ -181,6 +181,9 @@ locale par défaut : le suivi des candidatures contient mes données.
   onglet.
 - **Le détail d'une offre** : le lien vers la source pour postuler, l'analyse de mon profil et le
   brouillon de message, avec les mêmes vérifications que la ligne de commande.
+- **La même recherche ailleurs** : sous chaque recherche, des liens vers LinkedIn, Welcome to
+  the Jungle, HelloWork et Indeed, avec les mots, la commune, le rayon et les contrats déjà
+  remplis. Ils s'ouvrent dans mon navigateur : le radar ne lit pas ces sites.
 - **Le suivi des candidatures**, rangé par prochaine action : à relancer, à envoyer, en attente,
   entretiens. Une candidature envoyée planifie sa relance une semaine plus tard, une relance
   planifie la suivante, et une suppression peut s'annuler pendant quelques secondes.
@@ -222,7 +225,7 @@ Le détail du produit, des sources, de la partie RAG et de la feuille de route e
 docker compose up -d --wait && uv run pytest
 ```
 
-125 tests : lecture des pages et des flux, règles robots.txt, heures de travail sur des
+133 tests : lecture des pages et des flux, règles robots.txt, heures de travail sur des
 formulations d'offres réelles, géolocalisation, reprise sur erreur réseau, appels à Claude face à
 un faux serveur (sans clé ni réseau), l'API web et le suivi des candidatures, et tests
 d'intégration sur un vrai PostgreSQL + PostGIS + pgvector. La CI GitHub Actions les exécute à

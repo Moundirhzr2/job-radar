@@ -444,6 +444,7 @@ const data = {
   radar: resource(),
   employers: resource(),
   search: resource(),
+  elsewhere: resource(),
   offer: resource(),
   apps: resource(),
 };
@@ -457,6 +458,7 @@ const areaKey = () =>
   state.town ? `${state.town.lat.toFixed(5)},${state.town.lon.toFixed(5)},${state.radius}` : "";
 const radarKey = () => `${areaKey()}|${state.kinds.join(",")}`;
 const searchKey = () => `${radarKey()}|${state.rewrite ? 1 : 0}|${state.q}`;
+const elsewhereKey = () => `${radarKey()}|${state.town?.name}|${state.q}`;
 
 function areaParams(withKinds = true) {
   const params = new URLSearchParams({
@@ -543,7 +545,16 @@ function loadEmployers() {
   load(data.employers, key, (signal) => api(`/api/employers?${areaParams(false)}`, { signal }), refresh);
 }
 
+function loadElsewhere() {
+  const key = elsewhereKey();
+  if (data.elsewhere.key === key) return;
+  const params = new URLSearchParams({ q: state.q, town: state.town.name, radius_km: String(state.radius) });
+  for (const kind of state.kinds) params.append("kind", kind);
+  load(data.elsewhere, key, (signal) => api(`/api/elsewhere?${params}`, { signal }), refresh);
+}
+
 function runSearch(force = false) {
+  loadElsewhere();
   const key = searchKey();
   const cached = force ? null : session.get(`search:${key}`);
   if (cached?.results) {
@@ -1524,16 +1535,34 @@ function searchHead(value) {
   );
 }
 
+// The same search on the big job sites: links opened in the student's browser, never read.
+function elsewhereView() {
+  const res = data.elsewhere;
+  const found = res.valueKey === elsewhereKey() ? res.value : null;
+  if (!found?.length) return null;
+  return h(
+    "nav",
+    { class: "elsewhere", "aria-label": t("elsewhere.title") },
+    h("span", { class: "elsewhere-title" }, t("elsewhere.title")),
+    h("ul", {}, found.map((link) => h("li", {}, externalLink(link.url, link.site, "btn")))),
+    h("p", { class: "hint" }, t("elsewhere.note")),
+  );
+}
+
 function searchView() {
   const res = data.search;
   const value = res.valueKey === searchKey() ? res.value : null;
   if (!value) {
     if (res.error && res.key === searchKey()) {
-      return [searchHead(null), errorBox(res.error, t("search.error"), () => runSearch(true))];
+      return [searchHead(null), elsewhereView(), errorBox(res.error, t("search.error"), () => runSearch(true))];
     }
-    return [searchHead(null), skeleton(state.rewrite ? t("search.loadingRewrite") : t("search.loading"))];
+    return [
+      searchHead(null),
+      elsewhereView(),
+      skeleton(state.rewrite ? t("search.loadingRewrite") : t("search.loading")),
+    ];
   }
-  const nodes = [searchHead(value)];
+  const nodes = [searchHead(value), elsewhereView()];
   if (value.notice) {
     nodes.push(h("div", { class: "notice warn" }, h("p", {}, t(`notice.${value.notice.code}`, { error: value.notice.error }))));
   }

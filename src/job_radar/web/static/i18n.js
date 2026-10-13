@@ -149,6 +149,8 @@ export const MESSAGES = {
     "search.error": "La recherche a échoué.",
     "search.understood": `Claude a compris${NB}: «${NB}{text}${NB}»`,
     "search.terms": "Termes cherchés",
+    "elsewhere.title": `Même recherche sur${NB}:`,
+    "elsewhere.note": "S’ouvre dans ton navigateur : le radar ne lit pas ces sites.",
     "search.kinds": `Types de contrat retenus${NB}: {kinds}`,
     "search.notConfident":
       `Aucune offre ne correspond vraiment à ta demande dans ce rayon${NB}: voici les plus proches. Agrandis le rayon ou reformule.`,
@@ -421,6 +423,8 @@ export const MESSAGES = {
     "search.error": "The search failed.",
     "search.understood": "Claude understood: “{text}”",
     "search.terms": "Search terms",
+    "elsewhere.title": "Same search on:",
+    "elsewhere.note": "Opens in your browser: the radar doesn’t read these sites.",
     "search.kinds": "Contract types kept: {kinds}",
     "search.notConfident":
       "No offer really matches your request within this radius: here are the closest. Widen the radius or rephrase.",

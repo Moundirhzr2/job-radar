@@ -453,6 +453,20 @@ def create_app(services: Services | None = None) -> FastAPI:
             ],
         }
 
+    @app.get("/api/elsewhere")
+    def elsewhere(
+        q: Annotated[str, Query(min_length=2, max_length=300)],
+        town: Annotated[str, Query(min_length=1, max_length=100)],
+        radius_km: Radius = 30,
+        kind: Kinds = None,
+    ):
+        """The same search on the big job sites: links only, the radar reads none of them."""
+        from ..elsewhere import links
+
+        return [
+            {"site": link.site, "url": link.url} for link in links(q, town, radius_km, kind or ())
+        ]
+
     @app.get("/api/offers/{offer_id}")
     def offer(conn: Conn, offer_id: int):
         o = stored_offer(conn, offer_id)
