@@ -12,6 +12,7 @@ import argparse
 import os
 import sys
 
+import truststore
 from dotenv import load_dotenv
 
 from . import db
@@ -466,6 +467,10 @@ def cmd_offers(args) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    # Trust the certificates of the operating system, not only Python's bundle: an antivirus
+    # that inspects HTTPS (Avast, Kaspersky…) signs sites with its own root, which only the
+    # system store knows.
+    truststore.inject_into_ssl()
     load_dotenv()
     parser = argparse.ArgumentParser(prog="radar", description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
