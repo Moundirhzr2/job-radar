@@ -52,6 +52,7 @@ uv sync
 uv run radar companies --town Mulhouse --radius 15 --sections J --naf 62,63  # employeurs du numérique
 uv run radar hiring --town Mulhouse --radius 30 --field data      # qui recrute, même sans offre
 uv run radar francetravail --town Mulhouse --radius 30 --kind apprenticeship student_job
+uv run radar francetravail --france --kind apprenticeship        # toute la France, par département
 uv run radar francetravail --refresh                             # relit les offres connues
 uv run radar careers https://groupeoci.teamtailor.com/jobs       # offres d'un site carrières
 uv run radar index                                               # vecteurs des offres nouvelles
@@ -65,6 +66,11 @@ Essais sur données réelles autour de Mulhouse : 3 681 offres lues (France Trav
 carrières), dont 3 126 encore en ligne (555 retirées par les employeurs en quelques jours),
 353 alternances à moins de 100 km et 258 jobs étudiants ; 172 employeurs du numérique à moins
 de 15 km, dont 6 que La Bonne Boîte signale comme susceptibles de recruter.
+
+Le rayon est facultatif : sans rayon, le radar couvre toute la France. Avec les alternances
+France Travail des 101 départements (13 octobre 2026), la base compte 18 559 offres en ligne, et
+« alternance data » trouve 20 alternances data, la meilleure à 0,80 de confiance, là où il n'y en
+avait aucune à moins de 30 km de Mulhouse.
 
 Ce que ces données montrent (début octobre 2026) : à moins de 100 km de Mulhouse, France Travail
 ne publie aucune alternance data, et ses 5 alternances en informatique sont toutes déposées par
