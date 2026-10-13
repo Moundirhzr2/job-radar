@@ -72,3 +72,12 @@ def test_jobs_and_student_jobs_on_linkedin():
     assert params(found, "Welcome to the Jungle")[CONTRACT] == [
         "full_time", "temporary", "part_time",
     ]  # fmt: skip
+
+
+def test_without_a_radius_every_site_searches_all_of_france():
+    found = links("data", "Mulhouse", None, [Kind.INTERNSHIP])
+    linkedin = params(found, "LinkedIn")
+    assert linkedin["location"] == ["France"] and "distance" not in linkedin
+    assert params(found, "Welcome to the Jungle")["aroundQuery"] == ["France"]
+    assert params(found, "HelloWork") == {"k": ["data stage"]}
+    assert params(found, "Indeed") == {"q": ["data stage"]}

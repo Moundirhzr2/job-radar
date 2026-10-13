@@ -16,7 +16,8 @@ const TILES =
   "&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}";
 const KINDS = ["internship", "apprenticeship", "job", "student_job"];
 const STATUSES = ["to_apply", "sent", "followed_up", "interview", "offer", "rejected", "dropped"];
-const DEFAULT_RADIUS = 30;
+const SLIDER_RADIUS = 30; // where the slider starts when no radius is chosen
+const FRANCE_BOUNDS = [[41.3, -5.2], [51.1, 9.6]]; // metropolitan France
 const LIST_STEP = 60;
 const UNDO_MS = 6000;
 const SKELETON_DELAY = 200; // a skeleton that flashes for 50 ms is worse than none
@@ -52,7 +53,7 @@ const session = store(() => sessionStorage);
 const state = {
   lang: "fr",
   town: null, // { name, lat, lon }
-  radius: DEFAULT_RADIUS,
+  radius: null, // km, or null: all of France
   kinds: [],
   view: "radar", // "radar" | "tracker"
   tab: "offers", // "offers" | "employers"
@@ -86,7 +87,7 @@ function readUrl() {
   state.town =
     name && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { name, lat, lon } : null;
   const radius = Number.parseInt(params.get("r") || "", 10);
-  state.radius = Number.isFinite(radius) ? Math.min(100, Math.max(2, radius)) : DEFAULT_RADIUS;
+  state.radius = Number.isFinite(radius) ? Math.min(100, Math.max(2, radius)) : null;
   state.kinds = KINDS.filter((kind) => params.getAll("kind").includes(kind));
   state.view = params.get("view") === "tracker" ? "tracker" : "radar";
   state.tab = params.get("tab") === "employers" ? "employers" : "offers";
@@ -111,7 +112,7 @@ function query(overrides = {}, { withLang = true } = {}) {
     params.set("lat", s.town.lat.toFixed(5));
     params.set("lon", s.town.lon.toFixed(5));
   }
-  if (s.radius !== DEFAULT_RADIUS) params.set("r", String(s.radius));
+  if (s.radius !== null) params.set("r", String(s.radius));
   for (const kind of s.kinds) params.append("kind", kind);
   if (s.tab !== "offers") params.set("tab", s.tab);
   if (s.place) params.set("place", s.place);
@@ -460,12 +461,12 @@ const radarKey = () => `${areaKey()}|${state.kinds.join(",")}`;
 const searchKey = () => `${radarKey()}|${state.rewrite ? 1 : 0}|${state.q}`;
 const elsewhereKey = () => `${radarKey()}|${state.town?.name}|${state.q}`;
 
+// The message for the radius, or its "all of France" version when no radius is chosen.
+const reachKey = (key) => (state.radius === null ? `${key}.france` : key);
+
 function areaParams(withKinds = true) {
-  const params = new URLSearchParams({
-    lat: String(state.town.lat),
-    lon: String(state.town.lon),
-    radius_km: String(state.radius),
-  });
+  const params = new URLSearchParams({ lat: String(state.town.lat), lon: String(state.town.lon) });
+  if (state.radius !== null) params.set("radius_km", String(state.radius));
   if (withKinds) for (const kind of state.kinds) params.append("kind", kind);
   return params;
 }
@@ -527,7 +528,7 @@ function loadRadar() {
       radarIndex = new Map(data.radar.value.offers.map((offer) => [offer.id, offer]));
       if (!state.q && !state.offer && state.tab === "offers") {
         announce(
-          t("announce.offers", {
+          t(reachKey("announce.offers"), {
             offers: counted("u.offer", data.radar.value.count),
             radius: km(state.radius),
             town: state.town.name,
@@ -548,7 +549,8 @@ function loadEmployers() {
 function loadElsewhere() {
   const key = elsewhereKey();
   if (data.elsewhere.key === key) return;
-  const params = new URLSearchParams({ q: state.q, town: state.town.name, radius_km: String(state.radius) });
+  const params = new URLSearchParams({ q: state.q, town: state.town.name });
+  if (state.radius !== null) params.set("radius_km", String(state.radius));
   for (const kind of state.kinds) params.append("kind", kind);
   load(data.elsewhere, key, (signal) => api(`/api/elsewhere?${params}`, { signal }), refresh);
 }
@@ -723,6 +725,17 @@ function drawArea({ radius = state.radius, fit = false, ping = false } = {}) {
   layers.area.clearLayers();
   if (!state.town) return;
   const { lat, lon } = state.town;
+  if (radius === null) {
+    // All of France: no circle, only the town the distances are measured from.
+    L.marker([lat, lon], {
+      icon: L.divIcon({ className: "centre-mark", iconSize: [12, 12] }),
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: -1000,
+    }).addTo(layers.area);
+    if (fit) map.fitBounds(FRANCE_BOUNDS, { animate: !reducedMotion.matches });
+    return;
+  }
   const edge = circle(lat, lon, radius);
   L.polygon([WORLD, edge], { className: "outside", interactive: false, stroke: false }).addTo(layers.area);
   for (const ring of ringSteps(radius)) {
@@ -1199,7 +1212,10 @@ function startView() {
 
 function areaMeta(withKindsKey, plainKey) {
   const vars = { town: state.town.name, radius: km(state.radius) };
-  return state.kinds.length ? t(withKindsKey, { ...vars, kinds: kindsText(state.kinds) }) : t(plainKey, vars);
+  const pick = (key) => (known(`${key}.france`) ? reachKey(key) : key);
+  return state.kinds.length
+    ? t(pick(withKindsKey), { ...vars, kinds: kindsText(state.kinds) })
+    : t(pick(plainKey), vars);
 }
 
 function offersHead() {
@@ -1215,12 +1231,13 @@ function offersHead() {
           "h2",
           {},
           radar
-            ? t("offers.heading", { offers: counted("u.offer", radar.count), radius: km(state.radius) })
+            ? t(reachKey("offers.heading"), { offers: counted("u.offer", radar.count), radius: km(state.radius) })
             : t("loading.offers"),
         ),
         h("p", { class: "panel-meta" }, areaMeta("offers.metaKinds", "offers.meta")),
       ),
     ),
+    radar?.capped ? h("p", { class: "hint" }, t("offers.capped", { count: num(radar.count) })) : null,
     radar && data.radar.loading ? h("p", { class: "busy-note" }, t("busy.update")) : null,
   ];
 }
@@ -1375,10 +1392,11 @@ function offerRow(offer, { rank = null, weak = false } = {}) {
 }
 
 function widerButton() {
+  if (state.radius === null) return null;
+  if (state.radius >= 100)
+    return h("button", { type: "button", class: "btn", onclick: () => navigate({ radius: null }) }, t("radius.france"));
   const wider = Math.min(100, state.radius * 2);
-  return state.radius < 100
-    ? h("button", { type: "button", class: "btn", onclick: () => navigate({ radius: wider }) }, t("empty.offers.wider", { radius: km(wider) }))
-    : null;
+  return h("button", { type: "button", class: "btn", onclick: () => navigate({ radius: wider }) }, t("empty.offers.wider", { radius: km(wider) }));
 }
 
 function noOffers() {
@@ -1386,7 +1404,7 @@ function noOffers() {
     "div",
     { class: "empty" },
     icon("map-pin"),
-    h("h3", {}, t("empty.offers.title", { radius: km(state.radius) })),
+    h("h3", {}, t(reachKey("empty.offers.title"), { radius: km(state.radius) })),
     h("p", {}, t("empty.offers.text")),
     command(`radar francetravail --town "${state.town.name}"`),
     h(
@@ -2443,9 +2461,10 @@ function syncControls() {
   document.body.dataset.view = state.view;
   const town = $("#town");
   if (document.activeElement !== town) town.value = state.town?.name ?? "";
-  $("#radius").value = String(state.radius);
+  $("#radius").value = String(state.radius ?? SLIDER_RADIUS);
   showRadius(state.radius);
-  for (const chip of document.querySelectorAll(".chip")) {
+  $("#france").setAttribute("aria-pressed", String(state.radius === null));
+  for (const chip of document.querySelectorAll(".chip[data-kind]")) {
     chip.setAttribute("aria-pressed", String(state.kinds.includes(chip.dataset.kind)));
   }
   $("#rewrite").checked = state.rewrite;
@@ -2466,8 +2485,11 @@ function syncControls() {
 }
 
 function showRadius(radius) {
-  $("#radius-out").textContent = km(radius);
-  $("#radius").setAttribute("aria-valuetext", t("radius.valuetext", { n: num(radius) }));
+  $("#radius-out").textContent = radius === null ? "—" : km(radius);
+  $("#radius").setAttribute(
+    "aria-valuetext",
+    radius === null ? t("radius.france") : t("radius.valuetext", { n: num(radius) }),
+  );
 }
 
 function updateTitle() {
@@ -2564,6 +2586,10 @@ function wireControls() {
     drawArea({ radius: value });
   });
   radius.addEventListener("change", () => navigate({ radius: Number(radius.value) }));
+  // Moving the slider chooses a radius; the toggle goes back to all of France.
+  $("#france").addEventListener("click", () =>
+    navigate({ radius: state.radius === null ? Number(radius.value) : null }),
+  );
 
   $("#kinds").addEventListener("click", (event) => {
     const chip = event.target.closest(".chip");

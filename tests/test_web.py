@@ -231,3 +231,13 @@ def test_the_web_api_returns_the_links(web):
     ]
     assert "f_JT=I" in found.json()[0]["url"]
     assert web.get("/api/elsewhere", params={"q": "data", "town": ""}).status_code == 422
+
+
+def test_without_a_radius_the_radar_and_the_search_cover_all_of_france(web):
+    here = {"lat": MULHOUSE[0], "lon": MULHOUSE[1]}
+    near = web.get("/api/radar", params=here | {"radius_km": 30}).json()["offers"]
+    everywhere = web.get("/api/radar", params=here).json()
+    assert len(everywhere["offers"]) > len(near) and not everywhere["capped"]
+    assert any(o["distance_km"] > 30 for o in everywhere["offers"])  # Strasbourg
+    found = web.get("/api/search", params=here | {"q": "developpeur python"}).json()
+    assert any(r["distance_km"] > 30 for r in found["results"])

@@ -62,24 +62,31 @@ def _filter(kinds: Sequence[Kind], types: dict) -> list:
     return [types[k] for k in kinds]
 
 
-def links(q: str, town: str, radius_km: float, kinds: Sequence[Kind] = ()) -> list[Link]:
+def links(
+    q: str, town: str, radius_km: float | None = None, kinds: Sequence[Kind] = ()
+) -> list[Link]:
+    """No radius: all of France, whatever the town."""
     kinds = list(dict.fromkeys(kinds))  # keep the order, drop repeats
     q = q.strip()
+    plain = _words(q, kinds, False)
 
     linkedin_types = _filter(kinds, LINKEDIN_TYPES)
-    linkedin = {
-        "keywords": _words(q, kinds, bool(linkedin_types)),
-        "location": f"{town}, France",
-        "distance": _covering(radius_km / KM_PER_MILE, LINKEDIN_MILES),
-    }
+    linkedin: dict = {"keywords": _words(q, kinds, bool(linkedin_types)), "location": "France"}
+    hellowork: dict = {"k": plain}
+    indeed: dict = {"q": plain}  # fr.indeed.com covers France when no place is given
+    if radius_km is not None:
+        linkedin["location"] = f"{town}, France"
+        linkedin["distance"] = _covering(radius_km / KM_PER_MILE, LINKEDIN_MILES)
+        hellowork |= {"l": town, "ray": round(radius_km)}
+        indeed |= {"l": town, "radius": _covering(radius_km, INDEED_KM)}
     if linkedin_types:
         linkedin["f_JT"] = ",".join(linkedin_types)
 
     wttj_types = [t for group in _filter(kinds, WTTJ_TYPES) for t in group]
-    wttj = [("query", _words(q, kinds, bool(wttj_types))), ("aroundQuery", town)]
+    wttj = [("query", _words(q, kinds, bool(wttj_types)))]
+    wttj += [("aroundQuery", town if radius_km is not None else "France")]
     wttj += [("refinementList[contract_type][]", t) for t in wttj_types]
 
-    plain = _words(q, kinds, False)
     return [
         Link("LinkedIn", "https://www.linkedin.com/jobs/search/?" + urlencode(linkedin)),
         Link(
@@ -87,12 +94,7 @@ def links(q: str, town: str, radius_km: float, kinds: Sequence[Kind] = ()) -> li
         ),
         Link(
             "HelloWork",
-            "https://www.hellowork.com/fr-fr/emploi/recherche.html?"
-            + urlencode({"k": plain, "l": town, "ray": round(radius_km)}),
+            "https://www.hellowork.com/fr-fr/emploi/recherche.html?" + urlencode(hellowork),
         ),
-        Link(
-            "Indeed",
-            "https://fr.indeed.com/jobs?"
-            + urlencode({"q": plain, "l": town, "radius": _covering(radius_km, INDEED_KM)}),
-        ),
+        Link("Indeed", "https://fr.indeed.com/jobs?" + urlencode(indeed)),
     ]

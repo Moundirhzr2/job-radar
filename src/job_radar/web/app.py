@@ -36,7 +36,17 @@ def connection(request: Request) -> Iterator[psycopg.Connection]:
 Conn = Annotated[psycopg.Connection, Depends(connection)]
 Lat = Annotated[float, Query(ge=-90, le=90)]
 Lon = Annotated[float, Query(ge=-180, le=180)]
-Radius = Annotated[float, Query(gt=0, le=200)]
+# No radius: all of France. Half the Earth's circumference reaches every point, overseas
+# departments included, so the same distance queries serve both.
+Radius = Annotated[float | None, Query(gt=0, le=200)]
+EVERYWHERE_KM = 20_000.0
+RADAR_LIMIT = 5000  # offers on the map, closest first
+
+
+def reach(radius_km: float | None) -> float:
+    return EVERYWHERE_KM if radius_km is None else radius_km
+
+
 Kinds = Annotated[list[Kind] | None, Query()]
 Lang = Literal["fr", "en"]
 
@@ -339,18 +349,21 @@ def create_app(services: Services | None = None) -> FastAPI:
         ]
 
     @app.get("/api/radar")
-    def radar(conn: Conn, lat: Lat, lon: Lon, radius_km: Radius = 20, kind: Kinds = None):
-        offers = db.offers_within(conn, lat, lon, radius_km, kind, limit=5000)
+    def radar(conn: Conn, lat: Lat, lon: Lon, radius_km: Radius = None, kind: Kinds = None):
+        offers = db.offers_within(conn, lat, lon, reach(radius_km), kind, limit=RADAR_LIMIT)
         return {
             "count": len(offers),
+            "capped": len(offers) == RADAR_LIMIT,
             "offers": [_offer_json(o) for o in offers],
             "places": _places(offers),
         }
 
     @app.get("/api/employers")
-    def employers(conn: Conn, lat: Lat, lon: Lon, radius_km: Radius = 20):
-        hiring = db.likely_employers(conn, lat, lon, radius_km, limit=200)
-        digital = db.companies_within(conn, lat, lon, min(radius_km, 50), ["62", "63"], limit=500)
+    def employers(conn: Conn, lat: Lat, lon: Lon, radius_km: Radius = None):
+        hiring = db.likely_employers(conn, lat, lon, reach(radius_km), limit=200)
+        digital = db.companies_within(
+            conn, lat, lon, min(reach(radius_km), 50), ["62", "63"], limit=500
+        )
         return {
             "hiring": [
                 {
@@ -391,7 +404,7 @@ def create_app(services: Services | None = None) -> FastAPI:
         q: Annotated[str, Query(min_length=2, max_length=300)],
         lat: Lat,
         lon: Lon,
-        radius_km: Radius = 30,
+        radius_km: Radius = None,
         kind: Kinds = None,
         rewrite: bool = True,
         rerank: bool = True,
@@ -414,7 +427,7 @@ def create_app(services: Services | None = None) -> FastAPI:
             q,
             lat,
             lon,
-            radius_km,
+            reach(radius_km),
             services.embedder(),
             kinds=kind or (),
             profile=profile,
@@ -457,7 +470,7 @@ def create_app(services: Services | None = None) -> FastAPI:
     def elsewhere(
         q: Annotated[str, Query(min_length=2, max_length=300)],
         town: Annotated[str, Query(min_length=1, max_length=100)],
-        radius_km: Radius = 30,
+        radius_km: Radius = None,
         kind: Kinds = None,
     ):
         """The same search on the big job sites: links only, the radar reads none of them."""
