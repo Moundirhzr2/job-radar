@@ -7,6 +7,7 @@ import pytest
 from job_radar.http import ApiClient
 from job_radar.models import Kind
 from job_radar.sources.france_travail import (
+    DEPARTEMENTS,
     CredentialsError,
     FranceTravail,
     TokenProvider,
@@ -93,6 +94,17 @@ def test_search_pages_filters_and_reuses_the_token(keys):
     first, second = calls["search"]
     assert (first["commune"], first["distance"], first["natureContrat"]) == ("68224", "20", "E2,FS")
     assert (first["range"], second["range"]) == ("0-149", "150-299")
+
+
+def test_a_whole_departement_without_a_commune(keys):
+    ft, calls = fake_france_travail([httpx.Response(206, json=DATA)])
+    offers = list(ft.search_departement("2A", Kind.APPRENTICESHIP))
+    assert len(offers) == len(DATA["resultats"])
+    (sent,) = calls["search"]
+    assert sent["departement"] == "2A" and sent["natureContrat"] == "E2,FS"
+    assert "commune" not in sent and "distance" not in sent
+    assert len(DEPARTEMENTS) == 101 and {"2A", "2B", "976"} <= set(DEPARTEMENTS)
+    assert "20" not in DEPARTEMENTS
 
 
 def test_search_nothing_found_and_no_internships(keys):

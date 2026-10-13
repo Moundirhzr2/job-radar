@@ -21,7 +21,7 @@ from .sources.careers.ats import Board, fetch_board
 from .sources.careers.fetch import PoliteFetcher
 from .sources.careers.site import read_career_site
 from .sources.companies import HEADCOUNT_LABEL, CompanyDirectory
-from .sources.france_travail import CredentialsError, FranceTravail
+from .sources.france_travail import DEPARTEMENTS, CredentialsError, FranceTravail
 from .sources.geo import Geocoder, GeocodingUnavailable, find_towns, place
 from .sources.la_bonne_boite import ROME_FIELDS, LaBonneBoite
 
@@ -119,8 +119,13 @@ def cmd_feed(args) -> None:
 def cmd_francetravail(args) -> None:
     if args.refresh:
         return _refresh_france_travail()
+    if args.france:
+        return _france_travail_everywhere(args)
     if not args.town:
-        sys.exit("Indiquer une commune (--town), ou --refresh pour relire les offres connues.")
+        sys.exit(
+            "Indiquer une commune (--town), --france pour toute la France, "
+            "ou --refresh pour relire les offres connues."
+        )
     town = _town(args.town)
     kinds = [Kind(k) for k in args.kind] if args.kind else [None]
     ft = FranceTravail()
@@ -131,6 +136,21 @@ def cmd_francetravail(args) -> None:
     except CredentialsError as exc:
         sys.exit(str(exc))
     _store(offers, f"France Travail autour de {town.name} ({args.radius:g} km)")
+
+
+def _france_travail_everywhere(args) -> None:
+    """All of France, one département at a time: each one is saved before the next is read."""
+    kinds = [Kind(k) for k in args.kind] if args.kind else [None]
+    ft = FranceTravail()
+    try:
+        for departement in DEPARTEMENTS:
+            offers = []
+            for kind in kinds:
+                offers.extend(ft.search_departement(departement, kind, args.keywords))
+            if offers:
+                _store(offers, f"France Travail, département {departement}")
+    except CredentialsError as exc:
+        sys.exit(str(exc))
 
 
 def _refresh_france_travail() -> None:
@@ -501,6 +521,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument(
         "--refresh", action="store_true", help="relit les offres connues (heures, retraits)"
     )
+    p.add_argument("--france", action="store_true", help="toute la France, par département")
     p.add_argument("--radius", type=float, default=20)
     p.add_argument("--kind", nargs="+", choices=[k.value for k in Kind])
     p.add_argument("--keywords", default="", help="mots-clés, ex. data")

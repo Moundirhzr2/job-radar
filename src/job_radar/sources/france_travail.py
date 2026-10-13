@@ -26,6 +26,12 @@ API = "https://api.francetravail.io/partenaire/offresdemploi/v2"
 OFFERS_SCOPE = "api_offresdemploiv2 o2dsoffre"
 PAGE = 150
 MAX_RESULTS = 3150  # the API refuses ranges beyond index 3149
+# Every département, overseas included (Mayotte is 976; 975 is not a département).
+DEPARTEMENTS = (
+    [f"{n:02d}" for n in range(1, 96) if n != 20]
+    + ["2A", "2B"]
+    + ["971", "972", "973", "974", "976"]
+)
 
 # Query filters per kind of offer. Internships are almost never published on France Travail
 # (an internship agreement is not an employment contract), so there is no filter for them.
@@ -181,7 +187,23 @@ class FranceTravail:
         keywords: str = "",
         max_results: int = 1000,
     ) -> Iterator[Offer]:
-        params: dict[str, str | int] = {"commune": insee_code, "distance": round(distance_km)}
+        area = {"commune": insee_code, "distance": round(distance_km)}
+        yield from self._search(area, kind, keywords, max_results)
+
+    def search_departement(
+        self,
+        departement: str,
+        kind: Kind | None = None,
+        keywords: str = "",
+        max_results: int = MAX_RESULTS,
+    ) -> Iterator[Offer]:
+        """A whole département ("68", "2A", "974"): one sweep each covers all of France."""
+        yield from self._search({"departement": departement}, kind, keywords, max_results)
+
+    def _search(
+        self, area: dict, kind: Kind | None, keywords: str, max_results: int
+    ) -> Iterator[Offer]:
+        params: dict[str, str | int] = dict(area)
         if kind is not None:
             if kind not in KIND_FILTERS:
                 return  # no internships on France Travail
