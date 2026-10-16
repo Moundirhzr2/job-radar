@@ -153,6 +153,35 @@ def _france_travail_everywhere(args) -> None:
         sys.exit(str(exc))
 
 
+def cmd_lba(args) -> None:
+    """Every apprenticeship offer of La bonne alternance; offers gone from the export close."""
+    from pathlib import Path
+
+    from .sources import la_bonne_alternance as lba
+
+    path = Path(args.file) if args.file else Path("data/lba_export.json")
+    if not args.file:
+        try:
+            built = lba.download_export(path)
+        except lba.TokenMissing as exc:
+            sys.exit(str(exc))
+        print(f"Export La bonne alternance du {built:%d/%m/%Y %H:%M} téléchargé.")
+    seen, batch = set(), []
+    for offer in lba.offers(path):
+        seen.add(offer.source_id)
+        batch.append(offer)
+        if len(batch) == 2000:
+            _store(batch, "La bonne alternance")
+            batch = []
+    if batch:
+        _store(batch, "La bonne alternance")
+    conn = _connect()
+    gone = [i for i in db.open_offer_ids(conn, lba.SOURCE) if i not in seen]
+    print(f"{db.close_offers(conn, lba.SOURCE, gone)} offres retirées : plus dans l'export.")
+    if not args.file:
+        path.unlink()  # about 600 MB, rebuilt every night
+
+
 def _refresh_france_travail() -> None:
     """Re-read every known France Travail offer: current text and hours, or withdrawn."""
     conn = _connect()
@@ -527,6 +556,12 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--keywords", default="", help="mots-clés, ex. data")
     p.add_argument("--max", type=int, default=1000, help="offres au plus par type")
     p.set_defaults(func=cmd_francetravail)
+
+    p = sub.add_parser(
+        "lba", help="les offres d'alternance de La bonne alternance (toute la France)"
+    )
+    p.add_argument("--file", help="un export déjà téléchargé, au lieu de le télécharger")
+    p.set_defaults(func=cmd_lba)
 
     p = sub.add_parser("hiring", help="les entreprises qui recrutent, même sans offre publiée")
     p.add_argument("--town", required=True)
