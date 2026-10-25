@@ -128,6 +128,10 @@ CREATE TABLE IF NOT EXISTS hiring_potential (
     updated_at         timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (siret, rome)
 );
+-- La bonne alternance ajoute les établissements qui prennent des alternants sans offre publiée :
+-- pas de score, mais un lien pour leur envoyer une candidature spontanée.
+ALTER TABLE hiring_potential ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'la_bonne_boite';
+ALTER TABLE hiring_potential ADD COLUMN IF NOT EXISTS apply_url text;
 
 -- Les flux publics de logiciels de recrutement détectés sur les pages carrières.
 CREATE TABLE IF NOT EXISTS ats_boards (

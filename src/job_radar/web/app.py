@@ -376,6 +376,7 @@ def create_app(services: Services | None = None) -> FastAPI:
                     "score": round(e.score, 1),
                     "high_potential": e.is_high_potential,
                     "accepts_email": e.accepts_email,
+                    "apply_url": e.apply_url,  # takes apprentices: La bonne alternance page
                     "lat": e.latitude,
                     "lon": e.longitude,
                     "fiche": f"https://annuaire-entreprises.data.gouv.fr/etablissement/{e.siret}",

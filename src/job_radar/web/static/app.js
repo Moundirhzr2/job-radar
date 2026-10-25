@@ -993,10 +993,12 @@ function hiringPopup(employer) {
     { class: "popup" },
     h("p", { class: "t", translate: "no" }, employer.name),
     h("p", {}, `${cityName(employer.city)}, ${km(employer.distance_km)}`),
-    h("p", {}, t("employers.hiresIn", { field: romeName(employer.rome) })),
+    h("p", {}, employer.score > 0 ? t("employers.hiresIn", { field: romeName(employer.rome) }) : romeName(employer.rome)),
+    employer.apply_url ? h("p", {}, h("span", { class: "tag good" }, t("employers.apprentices"))) : null,
     h(
       "p",
       { class: "row-actions" },
+      employer.apply_url ? externalLink(employer.apply_url, t("employers.apply"), "btn primary") : null,
       externalLink(employer.fiche, t("employers.page")),
       trackCompanyControl(companyOf(employer), trackedCompanies()),
     ),
@@ -1476,14 +1478,18 @@ function employerRow(employer, tracked, hiring) {
       h(
         "span",
         { class: "line" },
-        hiring ? h("span", { class: "facts" }, t("employers.hiresIn", { field: romeName(employer.rome) })) : null,
+        // A score is La Bonne Boîte's forecast; La bonne alternance only says "takes apprentices".
+        hiring && employer.score > 0 ? h("span", { class: "facts" }, t("employers.hiresIn", { field: romeName(employer.rome) })) : null,
+        hiring && !(employer.score > 0) ? h("span", { class: "facts" }, romeName(employer.rome)) : null,
         hiring && employer.high_potential ? h("span", { class: "tag good" }, t("employers.high")) : null,
         hiring && employer.accepts_email ? h("span", { class: "facts" }, t("employers.email")) : null,
+        hiring && employer.apply_url ? h("span", { class: "tag good" }, t("employers.apprentices")) : null,
         !hiring && employer.naf_code ? h("span", { class: "facts", translate: "no" }, `NAF ${employer.naf_code}`) : null,
       ),
       h(
         "span",
         { class: "row-actions" },
+        hiring && employer.apply_url ? externalLink(employer.apply_url, t("employers.apply"), "btn primary") : null,
         externalLink(employer.fiche, t("employers.page")),
         trackCompanyControl(companyOf(employer), tracked),
       ),

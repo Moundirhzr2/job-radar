@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from datetime import datetime
 from pathlib import Path
 
@@ -25,6 +25,7 @@ from bs4 import BeautifulSoup
 
 from ..http import ApiClient, default_client
 from ..models import Kind, Location, Offer, weekly_hours
+from .la_bonne_boite import HiringCompany
 
 API = "https://api.apprentissage.beta.gouv.fr/api"
 SOURCE = "la_bonne_alternance"
@@ -147,14 +148,41 @@ def to_offer(raw: dict) -> Offer | None:
     )
 
 
-def offers(path: Path) -> Iterator[Offer]:
-    for raw in entries(path):
-        try:
-            found = to_offer(raw)
-        except (KeyError, TypeError, AttributeError):  # one malformed entry must not stop the rest
-            continue
-        if found is not None:
-            yield found
+def to_recruiter(raw: dict, romes: Collection[str]) -> tuple[HiringCompany, str] | None:
+    """A company likely to take an apprentice in one of `romes`, with the page to apply.
+
+    One row per company, under the first of its trades that matches: the same company under
+    three codes would appear three times in the list. Company data only: no person, no email.
+    """
+    if (raw.get("identifier") or {}).get("partner_label") != "recruteurs_lba":
+        return None
+    workplace = raw.get("workplace") or {}
+    codes = (raw.get("offer") or {}).get("rome_codes") or []
+    rome = next((c for c in codes if c in romes), None)
+    siret, url = workplace.get("siret") or "", (raw.get("apply") or {}).get("url") or ""
+    if rome is None or not siret or not url:
+        return None
+    place = _place(workplace.get("location"))
+    size = re.fullmatch(r"(\d+)-(\d+)", workplace.get("size") or "")
+    naf = (workplace.get("domain") or {}).get("naf") or {}
+    company = HiringCompany(
+        siret=siret,
+        company_name=(workplace.get("legal_name") or workplace.get("name") or "").strip(),
+        office_name=(workplace.get("brand") or "").strip(),
+        naf_code=naf.get("code") or "",
+        naf_label=naf.get("label") or "",
+        headcount_min=int(size.group(1)) if size else None,
+        headcount_max=int(size.group(2)) if size else None,
+        latitude=place.latitude,
+        longitude=place.longitude,
+        city=place.city,
+        postal_code=place.postal_code,
+        rome=rome,
+        hiring_potential=0.0,  # La bonne alternance publishes no score
+        is_high_potential=False,
+        accepts_email=False,
+    )
+    return company, url
 
 
-__all__ = ["SOURCE", "TokenMissing", "download_export", "entries", "offers", "to_offer"]
+__all__ = ["SOURCE", "TokenMissing", "download_export", "entries", "to_offer", "to_recruiter"]

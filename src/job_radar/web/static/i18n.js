@@ -126,7 +126,9 @@ export const MESSAGES = {
 
     "employers.hiring.title": "Embauchent souvent",
     "employers.hiring.hint":
-      "Entreprises qui recrutent régulièrement, même sans offre publiée (La Bonne Boîte, France Travail). Une candidature spontanée y a plus de chances.",
+      "Entreprises qui recrutent régulièrement, même sans offre publiée (La Bonne Boîte, France Travail), et celles qui prennent des alternants sans offre (La bonne alternance). Une candidature spontanée y a plus de chances.",
+    "employers.apprentices": "Prend des alternants",
+    "employers.apply": "Candidater",
     "employers.digital.title": "Entreprises du numérique",
     "employers.digital.hint": "Codes NAF 62 et 63, à moins de 50" + NB + "km, d’après l’Annuaire des entreprises.",
     "employers.hiresIn": "Embauche souvent en {field}",
@@ -407,7 +409,9 @@ export const MESSAGES = {
 
     "employers.hiring.title": "Often Hiring",
     "employers.hiring.hint":
-      "Companies that hire regularly, even without a published offer (La Bonne Boîte, France Travail). A spontaneous application stands a better chance there.",
+      "Companies that hire regularly, even without a published offer (La Bonne Boîte, France Travail), and those that take apprentices without an offer (La bonne alternance). A spontaneous application stands a better chance there.",
+    "employers.apprentices": "Takes apprentices",
+    "employers.apply": "Apply",
     "employers.digital.title": "Digital Companies",
     "employers.digital.hint": "NAF codes 62 and 63, within 50" + NB + "km, from the official company directory (Annuaire des entreprises).",
     "employers.hiresIn": "Often hires in {field}",

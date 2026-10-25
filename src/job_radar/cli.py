@@ -166,10 +166,18 @@ def cmd_lba(args) -> None:
         except lba.TokenMissing as exc:
             sys.exit(str(exc))
         print(f"Export La bonne alternance du {built:%d/%m/%Y %H:%M} téléchargé.")
-    seen, batch = set(), []
-    for offer in lba.offers(path):
-        seen.add(offer.source_id)
-        batch.append(offer)
+    romes = set(ROME_FIELDS[args.field])
+    seen, batch, recruiters = set(), [], []
+    for raw in lba.entries(path):
+        try:
+            offer, recruiter = lba.to_offer(raw), lba.to_recruiter(raw, romes)
+        except (KeyError, TypeError, AttributeError):  # one malformed entry must not stop the rest
+            continue
+        if recruiter:
+            recruiters.append(recruiter)
+        if offer:
+            seen.add(offer.source_id)
+            batch.append(offer)
         if len(batch) == 2000:
             _store(batch, "La bonne alternance")
             batch = []
@@ -178,6 +186,8 @@ def cmd_lba(args) -> None:
     conn = _connect()
     gone = [i for i in db.open_offer_ids(conn, lba.SOURCE) if i not in seen]
     print(f"{db.close_offers(conn, lba.SOURCE, gone)} offres retirées : plus dans l'export.")
+    count = db.replace_apprentice_recruiters(conn, recruiters)
+    print(f"{count} entreprises prennent des alternants en {args.field} sans offre publiée.")
     if not args.file:
         path.unlink()  # about 600 MB, rebuilt every night
 
@@ -561,6 +571,12 @@ def main(argv: list[str] | None = None) -> None:
         "lba", help="les offres d'alternance de La bonne alternance (toute la France)"
     )
     p.add_argument("--file", help="un export déjà téléchargé, au lieu de le télécharger")
+    p.add_argument(
+        "--field",
+        default="informatique",
+        choices=list(ROME_FIELDS),
+        help="domaine des entreprises sans offre gardées pour la carte",
+    )
     p.set_defaults(func=cmd_lba)
 
     p = sub.add_parser("hiring", help="les entreprises qui recrutent, même sans offre publiée")

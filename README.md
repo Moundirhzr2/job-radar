@@ -79,6 +79,11 @@ APEC…), sans reprendre celles de France Travail : 28 209 offres en ligne au 17
 Sur « alternance data », 9 des 20 premiers résultats en viennent. Les offres gérées par une
 école sont signalées (« géré par une école »).
 
+Le même export donne les entreprises qui prennent des alternants **sans offre publiée** :
+282 023 en France, dont 8 686 en informatique et data (codes ROME M1403, M1801, M1802,
+M1805, M1806, M1810), gardées pour la couche « Employeurs » avec un bouton « Candidater » vers
+leur page La bonne alternance. Données d'entreprise seulement : ni nom de personne, ni e-mail.
+
 Ce que ces données montrent (début octobre 2026) : à moins de 100 km de Mulhouse, France Travail
 ne publie aucune alternance data, et ses 5 alternances en informatique sont toutes déposées par
 des écoles. Un

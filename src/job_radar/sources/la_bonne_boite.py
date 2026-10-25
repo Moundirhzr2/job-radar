@@ -27,6 +27,7 @@ ROME_FIELDS = {
     "support": ["M1802"],  # Expertise et support en systèmes d'information
     "conseil": ["M1806"],  # Conseil et maîtrise d'ouvrage en SI
 }
+ROME_FIELDS["informatique"] = sorted({r for codes in ROME_FIELDS.values() for r in codes})
 
 
 @dataclass(frozen=True)

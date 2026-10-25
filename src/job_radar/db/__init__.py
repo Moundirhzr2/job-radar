@@ -502,12 +502,43 @@ def upsert_hiring(conn: psycopg.Connection, items: Iterable[HiringCompany]) -> i
                 VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (siret, rome) DO UPDATE SET
                     score = EXCLUDED.score, is_high_potential = EXCLUDED.is_high_potential,
-                    accepts_email = EXCLUDED.accepts_email, updated_at = now()
+                    accepts_email = EXCLUDED.accepts_email, source = 'la_bonne_boite',
+                    updated_at = now()
                 """,
                 (h.siret, h.rome, h.hiring_potential, h.is_high_potential, h.accepts_email),
             )
             count += 1
     return count
+
+
+def replace_apprentice_recruiters(
+    conn: psycopg.Connection, items: Iterable[tuple[HiringCompany, str]]
+) -> int:
+    """La bonne alternance's companies that take apprentices without an offer: today's list
+    replaces yesterday's. Each comes with the page where the student applies; one already
+    scored by La Bonne Boîte keeps its score and gains the link."""
+    items = list(items)
+    with conn.transaction():
+        conn.execute("DELETE FROM hiring_potential WHERE source = 'la_bonne_alternance'")
+        conn.execute("UPDATE hiring_potential SET apply_url = NULL WHERE apply_url IS NOT NULL")
+        scored = set(conn.execute("SELECT siret, rome FROM hiring_potential").fetchall())
+        new = [c for c, _ in items if (c.siret, c.rome) not in scored]
+        upsert_hiring(conn, new)  # nested: a savepoint inside this transaction
+        with conn.cursor() as cur:
+            cur.executemany(
+                "UPDATE hiring_potential SET apply_url = %s, source = %s"
+                " WHERE siret = %s AND rome = %s",
+                [
+                    (
+                        url,
+                        "la_bonne_boite" if (c.siret, c.rome) in scored else "la_bonne_alternance",
+                        c.siret,
+                        c.rome,
+                    )
+                    for c, url in items
+                ],
+            )
+    return len(items)
 
 
 @dataclass(frozen=True)
@@ -523,6 +554,8 @@ class LikelyEmployer:
     accepts_email: bool
     latitude: float | None = None
     longitude: float | None = None
+    source: str = "la_bonne_boite"
+    apply_url: str | None = None  # La bonne alternance: spontaneous application page
 
 
 def likely_employers(
@@ -539,13 +572,15 @@ def likely_employers(
         WITH here AS (SELECT ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326)::geography AS p)
         SELECT e.siret, c.name, coalesce(c.naf_code, ''), coalesce(e.city, ''),
                ST_Distance(e.location, here.p) / 1000, h.rome, h.score, h.is_high_potential,
-               h.accepts_email, ST_Y(e.location::geometry), ST_X(e.location::geometry)
+               h.accepts_email, ST_Y(e.location::geometry), ST_X(e.location::geometry),
+               h.source, h.apply_url
         FROM hiring_potential h
         JOIN establishments e ON e.siret = h.siret
         JOIN companies c ON c.id = e.company_id, here
         WHERE ST_DWithin(e.location, here.p, %(radius_m)s)
           AND (%(romes)s::text[] IS NULL OR h.rome = ANY(%(romes)s::text[]))
-        ORDER BY h.score DESC
+        -- Scored by La Bonne Boîte first; La bonne alternance gives no score: closest first.
+        ORDER BY h.score DESC, ST_Distance(e.location, here.p)
         LIMIT %(limit)s
         """,
         {
