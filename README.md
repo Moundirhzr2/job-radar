@@ -237,6 +237,16 @@ Le projet ne fait que ce qui est légal et respectueux des sites et des personne
 Le détail du produit, des sources, de la partie RAG et de la feuille de route est dans
 [PLAN.md](PLAN.md).
 
+## Mise à jour chaque nuit
+
+`scripts\refresh.ps1` relit La bonne alternance et France Travail, retire les offres qui ne sont
+plus en ligne et indexe les nouvelles ; le journal est dans `data\refresh.log`. Pour le lancer
+chaque nuit à 4 h (ou au démarrage suivant si le PC était éteint) :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install-refresh-task.ps1
+```
+
 ## Tests
 
 ```bash
