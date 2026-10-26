@@ -18,7 +18,15 @@ dependencies = [
     "fastapi>=0.143.0",
     "uvicorn>=0.54.0",
     "truststore>=0.10",
+    # On Windows, the GPU build of ONNX Runtime (it also runs on the CPU when there is no
+    # NVIDIA card). 1.26 is the last one built for CUDA 12, which drivers before 580 support.
+    "onnxruntime-gpu[cuda,cudnn]==1.26.0; sys_platform == 'win32'",
 ]
+
+[tool.uv]
+# fastembed asks for the CPU build; on Windows the GPU build above replaces it (both install
+# the same `onnxruntime` module and cannot live side by side).
+override-dependencies = ["onnxruntime>=1.20; sys_platform != 'win32'"]
 
 [project.scripts]
 radar = "job_radar.cli:main"

@@ -106,6 +106,13 @@ apporte :
 4. **Seuil de confiance** : si la meilleure offre a un score inférieur à 0,2, le radar dit qu'il
    n'a rien trouvé de convaincant au lieu de présenter des offres faibles comme des réponses.
 
+**Temps de réponse** (portable, GTX 1650 de 4 Go) : le re-ranking passe sur la carte graphique,
+50 offres relues en 6,5 s au lieu de 90 s sur le processeur, avec les mêmes scores. La page
+montre d'abord les résultats de la recherche hybride (4,6 s), puis l'ordre affiné (10,9 s au
+total). Les deux modèles ne tiennent pas ensemble dans 4 Go : la recherche met son re-ranker sur
+la carte, l'indexation son modèle de vecteurs (7 fois plus rapide). Sans carte NVIDIA, tout
+tourne sur le processeur ; `RADAR_DEVICE=cpu` l'impose.
+
 ### Mesurer avant de faire confiance
 
 - **5 demandes réelles**, les miennes : alternance data (30 km), alternance en informatique

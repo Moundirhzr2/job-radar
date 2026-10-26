@@ -271,6 +271,16 @@ def create_app(services: Services | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
+        # Load the models while the page opens, not on the first search (about 15 s on a
+        # laptop CPU). A search arriving earlier waits for them; a failure is retried then.
+        def warm():
+            try:
+                services.embedder()
+                services.reranker()
+            except Exception:
+                pass
+
+        threading.Thread(target=warm, daemon=True).start()
         yield
         pool.close()
 

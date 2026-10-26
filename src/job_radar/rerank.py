@@ -14,7 +14,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import replace
 
-from .embed import KIND_WORDS, local_model_dir
+from .embed import KIND_WORDS, local_model_dir, providers
 from .search import Candidate
 
 RERANK_MODEL = "jinaai/jina-reranker-v2-base-multilingual"
@@ -32,14 +32,16 @@ def sigmoid(x: float) -> float:
 
 
 class Reranker:
-    def __init__(self, model: str = RERANK_MODEL, batch_size: int = 8):
+    def __init__(self, model: str = RERANK_MODEL, batch_size: int = 8, gpu: bool = True):
         from fastembed.rerank.cross_encoder import TextCrossEncoder
 
         (description,) = [
             m for m in TextCrossEncoder.list_supported_models() if m["model"] == model
         ]
         self.batch_size = batch_size
-        self._model = TextCrossEncoder(model, specific_model_path=str(local_model_dir(description)))
+        self._model = TextCrossEncoder(
+            model, specific_model_path=str(local_model_dir(description)), providers=providers(gpu)
+        )
 
     def scores(self, query: str, documents: Sequence[str]) -> list[float]:
         """Relevance between 0 and 1 (the model's logits through a sigmoid)."""

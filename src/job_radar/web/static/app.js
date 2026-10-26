@@ -568,7 +568,18 @@ function runSearch(force = false) {
   params.set("q", state.q);
   params.set("rewrite", String(state.rewrite));
   setSearchBusy(true);
-  load(data.search, key, (signal) => api(`/api/search?${params}`, { signal }), () => {
+  // Two steps: the hybrid search answers in a few seconds and is shown at once; the re-ranked
+  // order replaces it when the re-ranker has reread every offer. One after the other, so the
+  // request is rewritten by Claude once (the server keeps the rewrite).
+  const search = async (signal) => {
+    const quick = await api(`/api/search?${params}&rerank=false`, { signal });
+    if (data.search.key === key && data.search.loading) {
+      Object.assign(data.search, { value: { ...quick, preliminary: true }, valueKey: key });
+      refresh();
+    }
+    return api(`/api/search?${params}`, { signal });
+  };
+  load(data.search, key, search, () => {
     setSearchBusy(false);
     if (data.search.valueKey === key) session.set(`search:${key}`, data.search.value);
     searchDone(key);
@@ -1587,6 +1598,13 @@ function searchView() {
     ];
   }
   const nodes = [searchHead(value), elsewhereView()];
+  if (value.preliminary) {
+    nodes.push(
+      res.loading
+        ? h("p", { class: "busy-note", role: "status" }, t("search.refining"))
+        : h("div", { class: "notice warn" }, h("p", {}, t("search.refineFailed"))),
+    );
+  }
   if (value.notice) {
     nodes.push(h("div", { class: "notice warn" }, h("p", {}, t(`notice.${value.notice.code}`, { error: value.notice.error }))));
   }

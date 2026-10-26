@@ -243,7 +243,7 @@ def cmd_index(args) -> None:
     if not todo:
         print("Toutes les offres sont déjà indexées.")
         return
-    embedder = Embedder()
+    embedder = Embedder(gpu=True)  # alone in this process: the card holds it
     done = 0
     for start in range(0, len(todo), 64):
         batch = todo[start : start + 64]

@@ -1,8 +1,14 @@
-"""Local models (fastembed, ONNX Runtime on CPU): embeddings and re-ranking, no API key.
+"""Local models (fastembed, ONNX Runtime): embeddings and re-ranking, no API key.
 
 Models are downloaded once into data/models as plain files. The Hugging Face cache stores
 large weights as symlinks into a shared blob folder, which recent ONNX Runtime versions refuse
 to load ("external data path escapes model directory"); a plain copy avoids that.
+
+An NVIDIA card runs them several times faster (GTX 1650, 4 GB: re-ranking 50 offers in 6 s
+instead of 33 s, embedding 7 times faster). Both models do not fit in 4 GB together, so each
+process puts only its heaviest one on the card: the search its re-ranker, the indexing its
+embedder. Without a usable card, ONNX Runtime falls back to the CPU with the same results;
+RADAR_DEVICE=cpu forces the CPU.
 """
 
 from __future__ import annotations
@@ -58,15 +64,33 @@ def local_model_dir(description: dict) -> Path:
     return target
 
 
+CPU = ["CPUExecutionProvider"]
+
+
+def providers(gpu: bool) -> list[str]:
+    """Where ONNX Runtime runs a model: the NVIDIA card when asked for and usable, else CPU."""
+    if not gpu or os.environ.get("RADAR_DEVICE", "").lower() == "cpu":
+        return CPU
+    import onnxruntime as ort
+
+    if "CUDAExecutionProvider" not in ort.get_available_providers():
+        return CPU
+    if hasattr(ort, "preload_dlls"):  # the CUDA and cuDNN libraries of the nvidia-* wheels
+        ort.preload_dlls()
+    return ["CUDAExecutionProvider", *CPU]  # CPU stays as the fallback
+
+
 class Embedder:
-    def __init__(self, model: str = DEFAULT_MODEL, batch_size: int = 16):
+    def __init__(self, model: str = DEFAULT_MODEL, batch_size: int = 16, gpu: bool = False):
         from fastembed import TextEmbedding
 
         (description,) = [m for m in TextEmbedding.list_supported_models() if m["model"] == model]
         self.model_name = model
         self.dim: int = description["dim"]
         self.batch_size = batch_size
-        self._model = TextEmbedding(model, specific_model_path=str(local_model_dir(description)))
+        self._model = TextEmbedding(
+            model, specific_model_path=str(local_model_dir(description)), providers=providers(gpu)
+        )
         # E5 models are trained with these prefixes; without them retrieval is worse.
         e5 = "e5" in model.lower()
         self._query, self._passage = ("query: ", "passage: ") if e5 else ("", "")
