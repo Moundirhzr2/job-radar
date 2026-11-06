@@ -4,9 +4,13 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       REQUIRE_DB: "1"
     steps:
@@ -18,6 +22,28 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest -v
+      - name: Build Python package
+        run: uv build --wheel
+      - name: Check the packaged app with PostgreSQL
+        shell: bash
+        run: |
+          uv pip install --no-deps --reinstall dist/*.whl
+          .venv/bin/radar web --port 8765 > "$RUNNER_TEMP/job-radar.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          if ! curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 \
+            --max-time 5 --output /dev/null http://127.0.0.1:8765/api/coverage ||
+            ! curl --fail --silent --show-error --max-time 5 --output /dev/null http://127.0.0.1:8765/; then
+            cat "$RUNNER_TEMP/job-radar.log"
+            exit 1
+          fi
+      - name: Save the tested package
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-radar-${{ github.sha }}
+          path: dist/*.whl
+          if-no-files-found: error
+          retention-days: 14
 
   deploy:
     needs: test
@@ -26,8 +52,6 @@ jobs:
       vars.N8N_WEBHOOK_URL != ''
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    permissions:
-      contents: read
     concurrency:
       group: vercel-production
       cancel-in-progress: false
