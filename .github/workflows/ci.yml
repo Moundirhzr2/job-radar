@@ -18,3 +18,35 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest -v
+
+  deploy:
+    needs: test
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.N8N_WEBHOOK_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    concurrency:
+      group: vercel-production
+      cancel-in-progress: false
+    steps:
+      - name: Envoyer le commit testé à n8n
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          N8N_WEBHOOK_URL: ${{ vars.N8N_WEBHOOK_URL }}
+          N8N_CI_TOKEN: ${{ secrets.N8N_CI_TOKEN }}
+        run: |
+          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
+          if [[ "$GITHUB_SHA" != "$current_sha" ]]; then
+            echo "Le commit testé a été remplacé sur main."
+            exit 0
+          fi
+          payload="$(jq -nc --arg sha "$GITHUB_SHA" --arg branch "$GITHUB_REF_NAME" '{sha: $sha, branch: $branch}')"
+          response="$(curl --fail --silent --show-error --max-time 30 --proto '=https' \
+            --request POST --header 'Content-Type: application/json' \
+            --header "X-CI-Token: ${N8N_CI_TOKEN:?Secret GitHub requis}" \
+            --data-binary "$payload" "$N8N_WEBHOOK_URL")"
+          jq -e 'select(.deploymentId | strings | startswith("dpl_"))' <<< "$response"
