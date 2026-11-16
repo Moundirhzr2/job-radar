@@ -411,7 +411,7 @@ a.row:hover, .row.hover { background: var(--surface-2); color: inherit; }
 .pin.dot { width: 12px; height: 12px; margin: 5px; font-size: 0; } /* a 22px hit area around a 12px dot */
 .pin.dot.approx { outline-offset: 0; }
 .hiring-pin {
-  width: 100%; height: 100%; transform: rotate(45deg); border-radius: 2px;
+  display: block; width: 100%; height: 100%; transform: rotate(45deg); border-radius: 2px;
   background: var(--surface); border: 2px solid var(--ink); cursor: pointer; transition: transform 160ms var(--ease);
 }
 .pin-icon:hover > .hiring-pin { transform: rotate(45deg) scale(1.15); }
