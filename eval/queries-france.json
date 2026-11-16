@@ -1,0 +1,11 @@
+[
+  {"id": "fr-data-analyst", "label": "Data analyst", "request": "alternance data analyst", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "fr-data-engineer", "label": "Data engineer", "request": "alternance data engineer, pipelines de données", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "fr-ia", "label": "IA / machine learning", "request": "alternance intelligence artificielle ou machine learning", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "fr-python", "label": "Développeur Python", "request": "alternance développeur Python", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "fr-web", "label": "Développeur web", "request": "alternance développeur web full stack", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "fr-cyber", "label": "Cybersécurité", "request": "alternance cybersécurité", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "fr-devops", "label": "DevOps / cloud", "request": "alternance DevOps ou cloud", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "fr-bi", "label": "BI / Power BI", "request": "alternance business intelligence, tableaux de bord Power BI", "town": "Mulhouse", "radius_km": 20000},
+  {"id": "mulhouse-data", "label": "Data près de Mulhouse", "request": "alternance data analyst ou data engineer", "town": "Mulhouse", "radius_km": 30}
+]

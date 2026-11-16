@@ -7,6 +7,6 @@ __pycache__/
 data/
 # Evaluation: offer texts come from the sources and rewrites from the private profile;
 # only the judgments (eval/labels.json) are kept in the repository.
-eval/pool.json
-eval/sheets/
-eval/rewrites.json
+eval/pool*.json
+eval/sheets*/
+eval/rewrites*.json

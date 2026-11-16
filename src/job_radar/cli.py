@@ -496,6 +496,22 @@ def cmd_web(args) -> None:
     uvicorn.run(create_app(), host=args.host, port=args.port, log_level="warning")
 
 
+def cmd_eval_page(args) -> None:
+    import json
+    from pathlib import Path
+
+    from .judge_page import page
+
+    sheets = [json.loads(f.read_text("utf-8")) for f in sorted(Path(args.sheets).glob("*.json"))]
+    if not sheets:
+        sys.exit(f"Aucune fiche dans {args.sheets} : lancer d'abord « radar eval pool ».")
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(page(sheets), "utf-8")
+    count = sum(len(s["items"]) for s in sheets)
+    print(f"{count} offres à juger dans {out.resolve()} : ouvre-la dans ton navigateur.")
+
+
 def cmd_eval_import(args) -> None:
     import json
     from collections import Counter
@@ -503,8 +519,11 @@ def cmd_eval_import(args) -> None:
 
     from .evaluate import import_labels
 
-    labels = import_labels(Path(args.directory))
-    Path(args.out).write_text(json.dumps(labels, ensure_ascii=False, indent=1) + "\n", "utf-8")
+    out = Path(args.out)
+    # Merged into the judgments already made: a new evaluation set adds to the old ones.
+    labels = json.loads(out.read_text("utf-8")) if out.exists() else {}
+    labels = dict(sorted((labels | import_labels(Path(args.directory))).items()))
+    out.write_text(json.dumps(labels, ensure_ascii=False, indent=1) + "\n", "utf-8")
     counts = Counter((v["by"], v["label"]) for v in labels.values())
     print(f"{len(labels)} jugements écrits dans {args.out} :")
     for (by, label), n in sorted(counts.items()):
@@ -628,8 +647,15 @@ def main(argv: list[str] | None = None) -> None:
         else:
             p.add_argument("--labels", default="eval/labels.json")
 
+    p = ev.add_parser("page", help="la page de jugement à l'aveugle, à ouvrir dans le navigateur")
+    p.add_argument("--sheets", default="eval/sheets")
+    p.add_argument("--out", default="data/judge.html")
+    p.set_defaults(func=cmd_eval_page)
+
     p = ev.add_parser("import", help="reprend les jugements exportés de la page d'étiquetage")
-    p.add_argument("directory", help="un fichier JSON {label, by?, note?} par offre")
+    p.add_argument(
+        "directory", help="le fichier exporté par la page, ou un dossier d'un JSON par offre"
+    )
     p.add_argument("--out", default="eval/labels.json")
     p.set_defaults(func=cmd_eval_import)
 

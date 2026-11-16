@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jugement à l'aveugle</title>
+<style>
+:root { color-scheme: light dark; --bg: #fafaf9; --fg: #1c1917; --muted: #57534e; --card: #fff;
+  --line: #e7e5e4; --yes: #15803d; --no: #b91c1c; --unsure: #a16207; }
+@media (prefers-color-scheme: dark) { :root { --bg: #1c1917; --fg: #f5f5f4; --muted: #a8a29e;
+  --card: #292524; --line: #44403c; --yes: #4ade80; --no: #f87171; --unsure: #facc15; } }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 16px; }
+header { position: sticky; top: 0; background: var(--bg); padding: 12px 0; border-bottom: 1px solid var(--line); }
+h1 { font-size: 1.15rem; margin: 0 0 4px; }
+.muted { color: var(--muted); font-size: .9rem; }
+.rules { font-size: .9rem; color: var(--muted); margin: 12px 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 16px 0; }
+.card h2 { font-size: 1.05rem; margin: 0 0 4px; }
+.excerpt { white-space: pre-wrap; font-size: .92rem; margin: 12px 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--card); color: var(--fg); cursor: pointer; min-height: 40px; }
+button[aria-pressed="true"][data-label="yes"] { border-color: var(--yes); color: var(--yes); font-weight: 600; }
+button[aria-pressed="true"][data-label="no"] { border-color: var(--no); color: var(--no); font-weight: 600; }
+button[aria-pressed="true"][data-label="unsure"] { border-color: var(--unsure); color: var(--unsure); font-weight: 600; }
+button:focus-visible, a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1 id="title"></h1>
+  <p class="muted" id="progress" aria-live="polite"></p>
+  <nav>
+    <button type="button" id="prev">← Précédente</button>
+    <button type="button" id="next">Suivante →</button>
+    <button type="button" id="export">Exporter mes jugements</button>
+  </nav>
+</header>
+<p class="rules">Pertinente = une offre que tu enverrais vraiment pour cette demande (le bon métier,
+le bon type de contrat ; « data » = bases de données, data analyst, data engineer, BI, big data).
+Raccourcis : <kbd>1</kbd> pertinente, <kbd>2</kbd> non, <kbd>3</kbd> incertaine, <kbd>←</kbd> <kbd>→</kbd>.</p>
+<div id="card" class="card" aria-live="polite"></div>
+</main>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const sheets = JSON.parse(document.getElementById("data").textContent);
+const items = sheets.flatMap((s) => s.items.map((it) => ({ ...it, sheet: s })));
+const store = (k, v) => { try { v === undefined ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const labels = Object.fromEntries(items.map((it) => [it.key, read("judge:" + it.key)]).filter(([, v]) => v));
+let i = items.findIndex((it) => !labels[it.key]); if (i < 0) i = 0;
+const el = (tag, text, attrs = {}) => { const e = document.createElement(tag); if (text) e.textContent = text;
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+const NAMES = { yes: "Pertinente", no: "Non pertinente", unsure: "Incertaine" };
+function render() {
+  const it = items[i], card = document.getElementById("card");
+  document.getElementById("title").textContent = `${it.sheet.label} : « ${it.sheet.request} »`;
+  const done = items.filter((x) => labels[x.key]).length;
+  document.getElementById("progress").textContent = `Offre ${i + 1} sur ${items.length} · ${done} jugées`;
+  card.replaceChildren(
+    el("h2", it.title),
+    el("p", [it.company, it.city, `${it.distance_km} km`, (it.kinds || []).join(", ")].filter(Boolean).join(" · "), { class: "muted" }),
+    el("p", it.excerpt, { class: "excerpt" }),
+    el("p", "", {}),
+  );
+  const link = el("a", "Voir l'offre d'origine", { href: it.url, target: "_blank", rel: "noopener noreferrer" });
+  card.lastChild.append(link);
+  const row = el("div", "", { class: "actions", role: "group", "aria-label": "Jugement" });
+  for (const [label, name] of Object.entries(NAMES)) {
+    const b = el("button", name, { type: "button", "data-label": label, "aria-pressed": String(labels[it.key] === label) });
+    b.onclick = () => judge(label); row.append(b);
+  }
+  card.append(row);
+}
+function judge(label) {
+  const key = items[i].key; labels[key] = label; store("judge:" + key, label);
+  if (i < items.length - 1) i++; render();
+}
+document.getElementById("prev").onclick = () => { if (i > 0) i--; render(); };
+document.getElementById("next").onclick = () => { if (i < items.length - 1) i++; render(); };
+document.getElementById("export").onclick = () => {
+  const out = Object.fromEntries(Object.entries(labels).map(([k, v]) => [k, { label: v }]));
+  const a = el("a", "", { href: URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: "application/json" })),
+    download: "jugements.json" });
+  a.click();
+};
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("a, input, textarea")) return;
+  if (e.key === "1") judge("yes"); else if (e.key === "2") judge("no"); else if (e.key === "3") judge("unsure");
+  else if (e.key === "ArrowRight") document.getElementById("next").click();
+  else if (e.key === "ArrowLeft") document.getElementById("prev").click();
+});
+render();
+</script>
+</body>
+</html>

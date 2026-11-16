@@ -95,20 +95,26 @@ def run_config(
 JUDGES = ("moundir", "claude")
 
 
-def import_labels(directory: Path) -> dict[str, dict]:
-    """Judgments exported from the labeling page: one {label, by?, note?} document per offer.
+def import_labels(path: Path) -> dict[str, dict]:
+    """Judgments exported from a labeling page: a directory with one {label, by?, note?}
+    document per offer, or one file {key: {label, by?, note?}} (radar eval page).
 
     A judgment without `by` is the student's own; Claude's carry `by: "claude"` and the reason.
     """
+    if path.is_file():
+        documents = json.loads(path.read_text(encoding="utf-8")).items()
+    else:
+        documents = (
+            (f.stem, json.loads(f.read_text("utf-8"))) for f in sorted(path.glob("*.json"))
+        )
     out = {}
-    for f in sorted(directory.glob("*.json")):
-        body = json.loads(f.read_text(encoding="utf-8"))
+    for key, body in documents:
         if body.get("label") not in ("yes", "no", "unsure"):
             continue
         entry = {"label": body["label"], "by": body.get("by") or JUDGES[0]}
         if body.get("note"):
             entry["note"] = body["note"]
-        out[f.stem] = entry
+        out[key] = entry
     return dict(sorted(out.items()))
 
 

@@ -95,6 +95,22 @@ def test_judgments_keep_who_judged_and_why(tmp_path):
     assert load_labels(path) == {"q__s__a": "unsure"}
 
 
+def test_the_judging_page_exports_one_file_that_imports(tmp_path):
+    exported = tmp_path / "jugements.json"
+    exported.write_text('{"q__s__a": {"label": "yes"}, "q__s__b": {"label": "skip"}}')
+    assert import_labels(exported) == {"q__s__a": {"label": "yes", "by": "moundir"}}
+
+
+def test_the_judging_page_carries_offer_text_as_data_only():
+    from job_radar.judge_page import page
+
+    evil = {"key": "q__s__a", "title": "</script><script>alert(1)</script>"}
+    sheet = {"label": "Data", "request": "alternance data", "position": 0, "items": [evil]}
+    html = page([sheet])
+    assert html.count("</script>") == 2  # the page's own two scripts, nothing from the offer
+    assert "alternance data" in html and "q__s__a" in html
+
+
 def test_calibration_brackets_a_safe_confidence_threshold():
     labels = {"q__s__a": "yes", "q__s__b": "no", "q__s__c": "yes", "e__s__x": "no"}
     rerank = {"q__s__a": 0.6, "q__s__b": 0.3, "q__s__c": 0.12, "e__s__x": 0.17, "q__s__z": 0.9}
