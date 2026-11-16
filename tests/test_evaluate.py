@@ -129,3 +129,17 @@ def test_withdrawn_offers_are_left_out_of_the_judgments(conn):
     db.upsert_offers(conn, [offer("a", "Mulhouse"), offer("b", "Mulhouse")])
     db.close_offers(conn, "test", ["b"])
     assert withdrawn(conn, ["q", "r"]) == {"q__test__b", "r__test__b"}
+
+
+def test_two_rewriting_models_side_by_side_share_one_pool():
+    from job_radar.evaluate import Collected
+
+    item = lambda k, by: {"key": k, "found_by": [by]}  # noqa: E731
+    plain = Collected({"hybride": {"q": ["a"]}}, {"a": item("a", "hybride")}, {}, {})
+    small = Collected({"réécriture": {"q": ["a", "b"]}},
+                      {"a": item("a", "réécriture"), "b": item("b", "réécriture")},
+                      {"a": 0.4}, {("réécriture", "q"): 0.4}).renamed("2b")  # fmt: skip
+    both = plain.merged(small)
+    assert set(both.rankings) == {"hybride", "réécriture (2b)"}
+    assert both.items["a"]["found_by"] == ["hybride", "réécriture (2b)"]
+    assert both.best == {("réécriture (2b)", "q"): 0.4} and both.rerank == {"a": 0.4}

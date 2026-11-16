@@ -7,18 +7,22 @@ Claude rewrites it, with the student's profile, into:
 - the kinds of contract and, when the request names one, a place and a radius.
 
 The answer is a validated Pydantic object (structured outputs), so the search never parses
-free text. The key is read from RADAR_ANTHROPIC_API_KEY.
+free text. The key is read from RADAR_ANTHROPIC_API_KEY; with RADAR_LLM=ollama:<model>, a
+local model answers instead (see llm.py).
 """
 
 from __future__ import annotations
 
 import os
+import re
 from typing import Literal
 
 import anthropic
 from pydantic import BaseModel, Field
 
-DEFAULT_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5-5")
+from .llm import MODEL, is_local, ollama_parse
+
+DEFAULT_MODEL = MODEL
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 SYSTEM = """\
@@ -68,6 +72,10 @@ def rewrite(
     model: str = DEFAULT_MODEL,
 ) -> RewrittenQuery:
     content = f"Request: {request}"
+    if api is None and is_local(model):
+        # The request alone: on a laptop, reading the CV (about 1,000 tokens) cost 20 s per
+        # search, and small models copied its words ("RAG", "supabase") into the keywords.
+        return with_asked_kinds(ollama_parse(model, RewrittenQuery, SYSTEM, content, None), request)
     if profile:
         content = f"<profile>\n{profile}\n</profile>\n\n{content}"
     response = (api or client()).beta.messages.parse(
@@ -84,4 +92,19 @@ def rewrite(
     )
     if response.stop_reason == "refusal" or response.parsed_output is None:
         raise RewriteRefused(f"stop_reason={response.stop_reason}")
-    return response.parsed_output
+    return with_asked_kinds(response.parsed_output, request)
+
+
+# Contract words in the request itself. They outrank the model: a small local model turned
+# "alternance data analyst" into an internship search, and that filter hides every good offer.
+ASKED_KINDS = {
+    "apprenticeship": re.compile(r"\b(alternan\w*|apprenti\w*|contrat pro\w*)\b", re.I),
+    "internship": re.compile(r"\b(stages?|stagiaires?)\b", re.I),
+    "student_job": re.compile(r"\b(jobs? (é|e)tudiants?|temps partiel|week-?end)\b", re.I),
+    "job": re.compile(r"\b(cdi|cdd|emplois?|postes?)\b", re.I),
+}
+
+
+def with_asked_kinds(rewritten: RewrittenQuery, request: str) -> RewrittenQuery:
+    asked = [kind for kind, words in ASKED_KINDS.items() if words.search(request)]
+    return rewritten.model_copy(update={"kinds": asked}) if asked else rewritten

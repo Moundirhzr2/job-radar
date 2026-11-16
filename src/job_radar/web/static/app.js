@@ -3,7 +3,7 @@
   - State lives in the URL (town, radius, kinds, tab, place, search, open offer, view, language):
     every view can be bookmarked or opened in a new tab.
   - Data comes from this server's /api; only the map tiles come from IGN.
-  - Text goes in through text nodes only: offers and Claude's answers are never parsed as HTML.
+  - Text goes in through text nodes only: offers and the AI's answers are never parsed as HTML.
 */
 import { LANGS, LOCALES, MESSAGES } from "./i18n.js";
 
@@ -570,7 +570,7 @@ function runSearch(force = false) {
   setSearchBusy(true);
   // Two steps: the hybrid search answers in a few seconds and is shown at once; the re-ranked
   // order replaces it when the re-ranker has reread every offer. One after the other, so the
-  // request is rewritten by Claude once (the server keeps the rewrite).
+  // request is rewritten once (the server keeps the rewrite).
   const search = async (signal) => {
     const quick = await api(`/api/search?${params}&rerank=false`, { signal });
     if (data.search.key === key && data.search.loading) {

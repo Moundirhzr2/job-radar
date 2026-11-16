@@ -131,3 +131,11 @@ def test_missing_token(monkeypatch):
     monkeypatch.delenv("LBA_API_TOKEN", raising=False)
     with pytest.raises(TokenMissing):
         read_token()
+
+
+def test_html_entities_are_decoded_even_without_tags():
+    raw = OFFER | {"offer": OFFER["offer"] | {"title": "Technicien Support IT &amp; Cybersécurité",
+                                             "description": "R&amp;D, 35 h"}}  # fmt: skip
+    offer = to_offer(raw)
+    assert offer.title == "Technicien Support IT & Cybersécurité"
+    assert offer.description == "R&D, 35 h"

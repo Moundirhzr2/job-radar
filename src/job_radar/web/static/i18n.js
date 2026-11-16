@@ -5,7 +5,7 @@
   - English follows the Web Interface Guidelines: Title Case for headings and buttons, sentence
     case for labels and messages, curly quotes.
   - Entries with { one, other } are chosen by Intl.PluralRules; {name} is replaced by a value.
-  Offers, company names and Claude’s quotes are data: they are shown as published, never
+  Offers, company names and the AI’s quotes are data: they are shown as published, never
   translated here.
 */
 
@@ -36,7 +36,7 @@ export const MESSAGES = {
     "search.placeholder": "alternance data analyst, job le week-end…",
     "search.submit": "Chercher",
     "search.busy": "Recherche…",
-    "search.rewrite": "Laisser Claude reformuler ta demande",
+    "search.rewrite": "Laisser l’IA reformuler ta demande",
     "map.region": "Carte",
     "map.label": "Carte des offres et des employeurs. La liste donne les mêmes informations au clavier.",
     "map.zoomIn": "Zoomer",
@@ -153,10 +153,10 @@ export const MESSAGES = {
     "search.metaKinds": "à moins de {radius} de {town}, {kinds}",
     "search.clear": "Effacer",
     "search.clearFull": "Effacer la recherche",
-    "search.loadingRewrite": "Claude reformule ta demande, puis le radar classe les offres…",
+    "search.loadingRewrite": "L’IA reformule ta demande, puis le radar classe les offres…",
     "search.loading": "Recherche…",
     "search.error": "La recherche a échoué.",
-    "search.understood": `Claude a compris${NB}: «${NB}{text}${NB}»`,
+    "search.understood": `L’IA a compris${NB}: «${NB}{text}${NB}»`,
     "search.terms": "Termes cherchés",
     "search.refining": "Premiers résultats. Le radar relit chaque offre pour affiner l’ordre…",
     "search.refineFailed": "Le classement fin a échoué : voici les résultats de la recherche hybride, sans re-ranking.",
@@ -171,7 +171,7 @@ export const MESSAGES = {
     "search.empty": `Écris ce que tu cherches, par exemple «${NB}alternance data analyst${NB}».`,
     "search.short": "Écris au moins deux caractères.",
     "search.needTown": "Choisis d’abord une commune, en haut de la page.",
-    "notice.rewrite_unavailable": `Claude n’a pas pu reformuler ta demande ({error})${NB}: recherche faite sans reformulation.`,
+    "notice.rewrite_unavailable": `L’IA n’a pas pu reformuler ta demande ({error})${NB}: recherche faite sans reformulation.`,
     "announce.offers": "{offers} à moins de {radius} de {town}.",
     "announce.results": "{results}.",
     "announce.place": "{offers} à {town}.",
@@ -194,7 +194,7 @@ export const MESSAGES = {
 
     "fit.title": "Ton profil face à cette offre",
     "fit.hint":
-      `Claude compare l’offre à ton CV (data/profile.md)${NB}: ce que tu couvres, ce qui reste à prouver, et des mini-projets pour combler l’écart. Chaque citation est vérifiée dans l’offre et dans ton CV.`,
+      `L’IA compare l’offre à ton CV (data/profile.md)${NB}: ce que tu couvres, ce qui reste à prouver, et des mini-projets pour combler l’écart. Chaque citation est vérifiée dans l’offre et dans ton CV.`,
     "fit.run": "Analyser ton profil",
     "fit.retry": "Réessayer l’analyse",
     "fit.busy": "Analyse…",
@@ -219,11 +219,11 @@ export const MESSAGES = {
     "draft.title": "Message au recruteur",
     "draft.closed": `L’offre est retirée${NB}: pas de message à préparer.`,
     "draft.hintContact":
-      "Claude prépare un court message pour le contact publié ({contact}), dans la langue de l’offre. Tu le relis, tu le modifies, et tu l’envoies toi-même.",
+      "L’IA prépare un court message pour le contact publié ({contact}), dans la langue de l’offre. Tu le relis, tu le modifies, et tu l’envoies toi-même.",
     "draft.hint":
-      "Claude prépare un court message à joindre à ta candidature, dans la langue de l’offre. Tu le relis, tu le modifies, et tu l’envoies toi-même.",
+      "L’IA prépare un court message à joindre à ta candidature, dans la langue de l’offre. Tu le relis, tu le modifies, et tu l’envoies toi-même.",
     "draft.hintLink":
-      "Claude prépare un court message à joindre à ta candidature sur le lien publié par l’entreprise, dans la langue de l’offre. Tu le relis, tu le modifies, et tu l’envoies toi-même.",
+      "L’IA prépare un court message à joindre à ta candidature sur le lien publié par l’entreprise, dans la langue de l’offre. Tu le relis, tu le modifies, et tu l’envoies toi-même.",
     "draft.toLink": `À joindre à ta candidature${NB}:`,
     "draft.applyLink": "Lien de candidature",
     "draft.run": "Rédiger un message",
@@ -287,8 +287,8 @@ export const MESSAGES = {
     "err.application_not_found": "Cette candidature n’existe plus.",
     "err.profile_missing": `Ton CV manque${NB}: mets-le en texte dans data/profile.md, puis réessaie.`,
     "err.ai_input_refused": `Ce site demande que ses pages ne servent pas d’entrée à une IA${NB}: pas d’analyse ni de brouillon pour cette offre.`,
-    "err.fit_failed": "Claude n’a pas pu analyser l’offre. Vérifie la clé RADAR_ANTHROPIC_API_KEY et ton crédit, puis réessaie.",
-    "err.draft_failed": "Claude n’a pas pu rédiger le message. Vérifie la clé RADAR_ANTHROPIC_API_KEY et ton crédit, puis réessaie.",
+    "err.fit_failed": "L’IA n’a pas pu analyser l’offre. Vérifie que le modèle répond (Ollama démarré, ou clé RADAR_ANTHROPIC_API_KEY et crédit), puis réessaie.",
+    "err.draft_failed": "L’IA n’a pas pu rédiger le message. Vérifie que le modèle répond (Ollama démarré, ou clé RADAR_ANTHROPIC_API_KEY et crédit), puis réessaie.",
     "err.offer_closed": "Cette offre n’est plus en ligne.",
     "err.geocoding_unavailable": "La recherche de communes ne répond pas. Réessaie dans un instant.",
     "err.company_required": "Indique au moins le nom de l’entreprise.",
@@ -321,7 +321,7 @@ export const MESSAGES = {
     "search.placeholder": "data analyst apprenticeship, weekend job…",
     "search.submit": "Search",
     "search.busy": "Searching…",
-    "search.rewrite": "Let Claude rephrase your request",
+    "search.rewrite": "Let the AI rephrase your request",
     "map.region": "Map",
     "map.label": "Map of offers and employers. The list gives the same information from the keyboard.",
     "map.zoomIn": "Zoom in",
@@ -438,10 +438,10 @@ export const MESSAGES = {
     "search.metaKinds": "within {radius} of {town}, {kinds}",
     "search.clear": "Clear",
     "search.clearFull": "Clear Search",
-    "search.loadingRewrite": "Claude is rephrasing your request, then the radar ranks the offers…",
+    "search.loadingRewrite": "The AI is rephrasing your request, then the radar ranks the offers…",
     "search.loading": "Searching…",
     "search.error": "The search failed.",
-    "search.understood": "Claude understood: “{text}”",
+    "search.understood": "The AI understood: “{text}”",
     "search.terms": "Search terms",
     "search.refining": "First results. The radar is rereading each offer to refine the order…",
     "search.refineFailed": "Fine ranking failed: these are the hybrid search results, without re-ranking.",
@@ -456,7 +456,7 @@ export const MESSAGES = {
     "search.empty": "Type what you are looking for, for example “data analyst apprenticeship”.",
     "search.short": "Type at least two characters.",
     "search.needTown": "Choose a town first, at the top of the page.",
-    "notice.rewrite_unavailable": "Claude couldn’t rephrase your request ({error}): searched without rephrasing.",
+    "notice.rewrite_unavailable": "The AI couldn’t rephrase your request ({error}): searched without rephrasing.",
     "announce.offers": "{offers} within {radius} of {town}.",
     "announce.results": "{results}.",
     "announce.place": "{offers} in {town}.",
@@ -479,7 +479,7 @@ export const MESSAGES = {
 
     "fit.title": "How Your Profile Fits This Offer",
     "fit.hint":
-      "Claude compares the offer with your CV (data/profile.md): what you cover, what is left to prove, and small projects to close the gap. Every quote is checked in the offer and in your CV.",
+      "The AI compares the offer with your CV (data/profile.md): what you cover, what is left to prove, and small projects to close the gap. Every quote is checked in the offer and in your CV.",
     "fit.run": "Analyse Your Profile",
     "fit.retry": "Try the Analysis Again",
     "fit.busy": "Analysing…",
@@ -504,11 +504,11 @@ export const MESSAGES = {
     "draft.title": "Message to the Recruiter",
     "draft.closed": "The offer is withdrawn: no message to prepare.",
     "draft.hintContact":
-      "Claude drafts a short message to the published contact ({contact}), in the language of the offer. You read it, edit it and send it yourself.",
+      "The AI drafts a short message to the published contact ({contact}), in the language of the offer. You read it, edit it and send it yourself.",
     "draft.hint":
-      "Claude drafts a short message to go with your application, in the language of the offer. You read it, edit it and send it yourself.",
+      "The AI drafts a short message to go with your application, in the language of the offer. You read it, edit it and send it yourself.",
     "draft.hintLink":
-      "Claude drafts a short message to go with your application through the link the company published, in the language of the offer. You read it, edit it and send it yourself.",
+      "The AI drafts a short message to go with your application through the link the company published, in the language of the offer. You read it, edit it and send it yourself.",
     "draft.toLink": "To go with your application:",
     "draft.applyLink": "Application link",
     "draft.run": "Write a Message",
@@ -572,8 +572,8 @@ export const MESSAGES = {
     "err.application_not_found": "This application no longer exists.",
     "err.profile_missing": "Your CV is missing: put it as text in data/profile.md, then try again.",
     "err.ai_input_refused": "This site asks that its pages are not used as AI input: no analysis or draft for this offer.",
-    "err.fit_failed": "Claude couldn’t analyse the offer. Check the RADAR_ANTHROPIC_API_KEY key and your credit, then try again.",
-    "err.draft_failed": "Claude couldn’t write the message. Check the RADAR_ANTHROPIC_API_KEY key and your credit, then try again.",
+    "err.fit_failed": "The AI couldn’t analyse the offer. Check that the model answers (Ollama running, or the RADAR_ANTHROPIC_API_KEY key and credit), then try again.",
+    "err.draft_failed": "The AI couldn’t write the message. Check that the model answers (Ollama running, or the RADAR_ANTHROPIC_API_KEY key and credit), then try again.",
     "err.offer_closed": "This offer is no longer online.",
     "err.geocoding_unavailable": "The town search is not answering. Try again in a moment.",
     "err.company_required": "Enter at least the company name.",

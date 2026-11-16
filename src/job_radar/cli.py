@@ -15,7 +15,7 @@ import sys
 import truststore
 from dotenv import load_dotenv
 
-from . import db
+from . import db, llm
 from .models import Kind
 from .sources.careers.ats import Board, fetch_board
 from .sources.careers.fetch import PoliteFetcher
@@ -314,37 +314,87 @@ def cmd_search(args) -> None:
         print(f"      #{c.id} — {c.company or '?'} — {c.city} — {c.url}")
 
 
+def cmd_explain(args) -> None:
+    from pathlib import Path
+
+    from .embed import Embedder
+    from .explain import explain
+    from .fit import analyse
+    from .rerank import Reranker
+    from .rewrite import rewrite
+
+    profile = Path(args.profile).read_text(encoding="utf-8") if args.profile else ""
+    report = explain(
+        _connect(),
+        args.request,
+        _town(args.town),
+        args.radius or 20_000,  # no radius: all of France
+        Embedder(),
+        Reranker(),
+        rewrite,
+        profile,
+        analyse if args.fit and profile else None,
+        llm.MODEL,
+    )
+    print(report)
+    if args.out:
+        Path(args.out).write_text(report + "\n", "utf-8")
+
+
 def _eval_setup(args):
     from pathlib import Path
 
     from .embed import Embedder
-    from .evaluate import CONFIGS, CachedRewriter, load_queries
+    from .evaluate import CachedRewriter, load_queries
     from .rerank import Reranker
     from .rewrite import rewrite
 
     queries = load_queries(Path(args.queries))
     towns = {name: _town(name) for name in {q.town for q in queries}}
     profile = Path(args.profile).read_text(encoding="utf-8") if args.profile else ""
-    rewriter = CachedRewriter(Path(args.rewrites), rewrite)
-    configs = list(CONFIGS)
-    try:
-        for q in queries:
-            rewriter(q.request, profile)
-    except Exception as exc:  # no credit, no key, network: evaluate without rewriting
-        print(f"Réécriture indisponible ({type(exc).__name__}) : configurations sans réécriture.")
-        configs = [c for c in configs if not CONFIGS[c][1]]
-    return queries, towns, profile, rewriter, configs, Embedder(), Reranker()
+    # One rewriter per model compared (Claude, or local models), each with its own cache.
+    path = Path(args.rewrites)
+    rewriters = {}
+    for model in args.llm:
+        label = model.removeprefix("ollama:")
+        cache = (
+            path if len(args.llm) == 1 else path.with_stem(f"{path.stem}-{label}".replace(":", "-"))
+        )
+        rewriter = CachedRewriter(cache, lambda r, p, model=model: rewrite(r, p, model=model))
+        try:
+            for q in queries:
+                rewriter(q.request, profile)
+        except Exception as exc:  # no credit, no key, network: evaluate without this model
+            print(f"Réécriture indisponible avec {label} ({type(exc).__name__}).")
+            continue
+        rewriters[label] = rewriter
+    return queries, towns, profile, rewriters, Embedder(), Reranker()
+
+
+def _collect_all(conn, queries, towns, profile, rewriters, embedder, reranker, depth=50):
+    """Every configuration: those without rewriting once, the others once per model."""
+    from .evaluate import CONFIGS, collect
+
+    plain = [c for c in CONFIGS if not CONFIGS[c][1]]
+    rewritten = [c for c in CONFIGS if CONFIGS[c][1]]
+    found = collect(conn, queries, towns, embedder, reranker, None, profile, plain, depth)
+    for label, rewriter in rewriters.items():
+        part = collect(
+            conn, queries, towns, embedder, reranker, rewriter, profile, rewritten, depth
+        )
+        found = found.merged(part.renamed(label) if len(rewriters) > 1 else part)
+    return found
 
 
 def cmd_eval_pool(args) -> None:
     import json
     from pathlib import Path
 
-    from .evaluate import collect, pool, sheets
+    from .evaluate import pool, sheets
 
-    queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
-    found = collect(
-        _connect(), queries, towns, embedder, reranker, rewriter, profile, configs, args.depth
+    queries, towns, profile, rewriters, embedder, reranker = _eval_setup(args)
+    found = _collect_all(
+        _connect(), queries, towns, profile, rewriters, embedder, reranker, args.depth
     )
     to_judge = pool(found.rankings, found.items, args.depth)
     Path(args.out).write_text(json.dumps(to_judge, ensure_ascii=False, indent=1) + "\n", "utf-8")
@@ -359,17 +409,17 @@ def cmd_eval_pool(args) -> None:
 def cmd_eval_score(args) -> None:
     from pathlib import Path
 
-    from .evaluate import calibration, collect, load_labels, score, to_markdown, withdrawn
+    from .evaluate import calibration, load_labels, score, to_markdown, withdrawn
     from .pipeline import CONFIDENCE
 
-    queries, towns, profile, rewriter, configs, embedder, reranker = _eval_setup(args)
+    queries, towns, profile, rewriters, embedder, reranker = _eval_setup(args)
     conn = _connect()
     labels = load_labels(Path(args.labels))
     gone = withdrawn(conn, [q.id for q in queries]) & set(labels)
     labels = {k: v for k, v in labels.items() if k not in gone}
     if gone:
         print(f"{len(gone)} jugements ignorés : offres retirées depuis par l'employeur.\n")
-    found = collect(conn, queries, towns, embedder, reranker, rewriter, profile, configs)
+    found = _collect_all(conn, queries, towns, profile, rewriters, embedder, reranker)
     rankings = found.rankings
     unjudged = {k for per_q in rankings.values() for r in per_q.values() for k in r[:10]} - set(
         labels
@@ -612,6 +662,17 @@ def main(argv: list[str] | None = None) -> None:
         "index", help="calcule les vecteurs des offres nouvelles ou modifiées"
     ).set_defaults(func=cmd_index)
 
+    p = sub.add_parser("explain", help="une recherche pas à pas : ce que produit chaque étape")
+    p.add_argument("request", help='ex. "alternance data analyst"')
+    p.add_argument("--town", default="Mulhouse", help="d'où se mesurent les distances")
+    p.add_argument("--radius", type=float, help="en km (sans rayon : toute la France)")
+    p.add_argument("--fit", action="store_true", help="ajoute la génération sur l'offre n° 1")
+    p.add_argument(
+        "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
+    )
+    p.add_argument("--out", help="écrit aussi la trace dans ce fichier Markdown")
+    p.set_defaults(func=cmd_explain)
+
     p = sub.add_parser("search", help="recherche les offres qui correspondent à une demande")
     p.add_argument("request", help='ex. "alternance data"')
     p.add_argument("--town", help="commune (sinon celle nommée dans la demande)")
@@ -636,6 +697,12 @@ def main(argv: list[str] | None = None) -> None:
         p = ev.add_parser(name, help=help_)
         p.add_argument("--queries", default="eval/queries.json")
         p.add_argument("--rewrites", default="eval/rewrites.json")
+        p.add_argument(
+            "--llm",
+            nargs="+",
+            default=[llm.MODEL],
+            help="modèles comparés pour la réécriture, ex. ollama:qwen3.5:2b ollama:qwen3.5:4b",
+        )
         p.add_argument(
             "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
         )

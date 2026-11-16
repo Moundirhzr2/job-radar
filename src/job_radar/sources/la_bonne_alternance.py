@@ -18,6 +18,7 @@ import os
 import re
 from collections.abc import Collection, Iterator
 from datetime import datetime
+from html import unescape
 from pathlib import Path
 
 import httpx
@@ -93,8 +94,10 @@ def _date(value: str | None) -> datetime | None:
 
 
 def _text(html: str) -> str:
+    """Plain text: tags removed and entities decoded (some partners send "R&amp;D" even in
+    titles that hold no tag)."""
     if "<" not in html:
-        return html.strip()
+        return unescape(html).strip()
     text = BeautifulSoup(html, "html.parser").get_text("\n")
     return re.sub(r"\n\s*\n+", "\n\n", text).strip()
 
@@ -135,8 +138,8 @@ def to_offer(raw: dict) -> Offer | None:
         source=SOURCE,
         source_id=ident.get("id") or f"{ident.get('partner_label')}:{ident.get('partner_job_id')}",
         url=url,
-        title=(offer.get("title") or "").strip(),
-        company=(workplace.get("name") or workplace.get("brand") or "").strip(),
+        title=_text(offer.get("title") or ""),
+        company=_text(workplace.get("name") or workplace.get("brand") or ""),
         description=description,
         kinds=frozenset({Kind.APPRENTICESHIP}),
         employment_types=types,

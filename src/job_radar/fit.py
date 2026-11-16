@@ -16,7 +16,6 @@ presented as acquired.
 from __future__ import annotations
 
 import hashlib
-import os
 import re
 import unicodedata
 from collections.abc import Callable
@@ -25,9 +24,10 @@ from typing import Literal
 import anthropic
 from pydantic import BaseModel, Field, PrivateAttr
 
+from .llm import MODEL, is_local, ollama_parse
 from .rewrite import FALLBACK_BETA, client
 
-DEFAULT_MODEL = os.environ.get("RADAR_CLAUDE_MODEL", "claude-opus-5-5")
+DEFAULT_MODEL = MODEL
 
 LANGUAGES = {
     "fr": 'Write every field in French, addressing the student as "tu"',
@@ -164,16 +164,15 @@ def analyse(
 ) -> Fit:
     if not profile.strip():
         raise ValueError("Sans profil, il n'y a rien à comparer : renseigner data/profile.md.")
+    system = SYSTEM.format(language=LANGUAGES[lang])
+    content = f"<profile>\n{profile}\n</profile>\n\n<offer>\n{offer}\n</offer>"
+    if api is None and is_local(model):  # same checks: every quote is looked up word for word
+        return check(ollama_parse(model, Fit, system, content, None), offer, profile)
     response = (api or client()).beta.messages.parse(
         model=model,
         max_tokens=16000,
-        system=SYSTEM.format(language=LANGUAGES[lang]),
-        messages=[
-            {
-                "role": "user",
-                "content": f"<profile>\n{profile}\n</profile>\n\n<offer>\n{offer}\n</offer>",
-            }
-        ],
+        system=system,
+        messages=[{"role": "user", "content": content}],
         output_format=Fit,
         # Weighing a CV against an offer needs some care, not a long reasoning.
         output_config={"effort": "medium"},

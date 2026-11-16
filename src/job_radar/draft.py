@@ -12,6 +12,7 @@ import anthropic
 from pydantic import BaseModel, Field, PrivateAttr
 
 from .fit import DEFAULT_MODEL, quoted
+from .llm import is_local, ollama_parse
 from .rewrite import FALLBACK_BETA, client
 
 SYSTEM = """\
@@ -74,6 +75,8 @@ def write(
         f"<profile>\n{profile}\n</profile>\n\n<offer>\n{offer}\n</offer>\n\n"
         f"<contact>\n{contact or 'aucun contact publié'}\n</contact>"
     )
+    if api is None and is_local(model):
+        return check(ollama_parse(model, Draft, SYSTEM, content, None), profile)
     response = (api or client()).beta.messages.parse(
         model=model,
         max_tokens=16000,

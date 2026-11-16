@@ -242,6 +242,27 @@ class Collected:
     rerank: dict[str, float]  # item key -> best re-ranking score it received
     best: dict[tuple[str, str], float]  # (config, request) -> score of its best offer
 
+    def renamed(self, suffix: str) -> Collected:
+        """The same results with each configuration named after the model that rewrote."""
+        name = lambda c: f"{c} ({suffix})"  # noqa: E731
+        items = {
+            k: v | {"found_by": [name(c) for c in v["found_by"]]} for k, v in self.items.items()
+        }
+        rankings = {name(c): r for c, r in self.rankings.items()}
+        return Collected(
+            rankings, items, self.rerank, {(name(c), q): s for (c, q), s in self.best.items()}
+        )
+
+    def merged(self, other: Collected) -> Collected:
+        """Two collections as one: configurations side by side, one pool of offers to judge."""
+        items = {k: dict(v) for k, v in self.items.items()}
+        for k, v in other.items.items():
+            items[k] = (
+                items[k] | {"found_by": items[k]["found_by"] + v["found_by"]} if k in items else v
+            )
+        rerank = self.rerank | {k: max(s, self.rerank.get(k, 0.0)) for k, s in other.rerank.items()}
+        return Collected(self.rankings | other.rankings, items, rerank, self.best | other.best)
+
 
 def collect(
     conn,
