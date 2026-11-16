@@ -331,7 +331,7 @@ def cmd_explain(args) -> None:
         args.radius or 20_000,  # no radius: all of France
         Embedder(),
         Reranker(),
-        rewrite,
+        rewrite if args.rewrite else None,
         profile,
         analyse if args.fit and profile else None,
         llm.MODEL,
@@ -667,6 +667,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--town", default="Mulhouse", help="d'où se mesurent les distances")
     p.add_argument("--radius", type=float, help="en km (sans rayon : toute la France)")
     p.add_argument("--fit", action="store_true", help="ajoute la génération sur l'offre n° 1")
+    p.add_argument("--rewrite", action="store_true", help="fait reformuler la demande d'abord")
     p.add_argument(
         "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
     )
@@ -682,7 +683,12 @@ def main(argv: list[str] | None = None) -> None:
         "--profile", default="data/profile.md" if os.path.exists("data/profile.md") else None
     )
     p.add_argument("--mode", choices=["hybrid", "vector", "fulltext"], default="hybrid")
-    p.add_argument("--no-rewrite", dest="rewrite", action="store_false", help="sans Claude")
+    p.add_argument(
+        "--rewrite",
+        action="store_true",
+        help="fait reformuler la demande par le modèle de langage (aidait avec Claude, pas avec "
+        "un petit modèle local : voir eval/)",
+    )
     p.add_argument("--no-rerank", dest="rerank", action="store_false")
     p.add_argument("-n", type=int, default=15, help="nombre de résultats")
     p.set_defaults(func=cmd_search)

@@ -25,3 +25,12 @@ def test_every_stage_of_the_rag_is_shown(indexed):  # noqa: F811
         assert stage in report
     assert "ollama:test" in report and "Data analyst (H/F)" in report
     assert "| Rang sens | Rang mots | Score RRF |" in report
+
+
+def test_without_rewriting_the_request_itself_is_searched(indexed):  # noqa: F811
+    town = Town("Mulhouse", "68224", ("68100",), *MULHOUSE, 105000)
+    report = explain(
+        indexed, "data sql", town, 30, FakeEmbedder(), FakeReranker(), None, "", None, "x"
+    )
+    assert "Réécriture — désactivée" in report and "« data sql »" in report
+    assert "## 4. Confiance" in report

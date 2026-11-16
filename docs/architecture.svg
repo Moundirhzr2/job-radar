@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#57534e"/>
+    </marker>
+  </defs>
+  <rect width="960" height="560" rx="18" fill="#fafaf9"/>
+
+  <!-- Sources -->
+  <text x="40" y="52" font-size="13" font-weight="700" fill="#78716c" letter-spacing="1.5">OFFICIAL SOURCES</text>
+  <g font-size="14" fill="#1c1917">
+    <rect x="40" y="68" width="200" height="54" rx="10" fill="#fff" stroke="#d6d3d1"/>
+    <text x="56" y="92" font-weight="600">France Travail</text><text x="56" y="110" font-size="12" fill="#57534e">Job offers API v2 · OAuth2</text>
+    <rect x="40" y="134" width="200" height="54" rx="10" fill="#fff" stroke="#d6d3d1"/>
+    <text x="56" y="158" font-weight="600">La bonne alternance</text><text x="56" y="176" font-size="12" fill="#57534e">daily export · 600 MB streamed</text>
+    <rect x="40" y="200" width="200" height="54" rx="10" fill="#fff" stroke="#d6d3d1"/>
+    <text x="56" y="224" font-weight="600">Company career sites</text><text x="56" y="242" font-size="12" fill="#57534e">JSON-LD · robots.txt respected</text>
+  </g>
+  <path d="M240 161 H300" stroke="#57534e" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- Store -->
+  <rect x="304" y="96" width="220" height="130" rx="12" fill="#eef2ff" stroke="#a5b4fc"/>
+  <text x="322" y="124" font-size="15" font-weight="700" fill="#1e1b4b">PostgreSQL 17 · Docker</text>
+  <text x="322" y="148" font-size="13" fill="#312e81">PostGIS · real distances</text>
+  <text x="322" y="168" font-size="13" fill="#312e81">pgvector · 26,000 vectors</text>
+  <text x="322" y="188" font-size="13" fill="#312e81">French full-text search</text>
+  <text x="322" y="212" font-size="12" fill="#4338ca">refreshed every night</text>
+  <text x="304" y="250" font-size="12" fill="#57534e">e5-large on the GPU: 10 offers/s</text>
+
+  <!-- Search pipeline -->
+  <text x="40" y="318" font-size="13" font-weight="700" fill="#78716c" letter-spacing="1.5">SEARCH (A MEASURED RAG)</text>
+  <g font-size="13" fill="#1c1917">
+    <rect x="40" y="334" width="200" height="96" rx="10" fill="#fff" stroke="#d6d3d1"/>
+    <text x="56" y="358" font-weight="700">1 · Query rewriting, optional</text>
+    <text x="56" y="378" fill="#57534e">local LLM or Claude</text>
+    <text x="56" y="396" fill="#57534e">off by default: measured</text>
+    <text x="56" y="414" fill="#57534e">Pydantic + contract guard</text>
+
+    <rect x="262" y="334" width="200" height="96" rx="10" fill="#fff" stroke="#d6d3d1"/>
+    <text x="278" y="358" font-weight="700">2 · Hybrid retrieval</text>
+    <text x="278" y="378" fill="#57534e">vectors + words + radius</text>
+    <text x="278" y="396" fill="#57534e">one SQL query</text>
+    <text x="278" y="414" fill="#57534e">RRF fusion</text>
+
+    <rect x="484" y="334" width="200" height="96" rx="10" fill="#fff" stroke="#d6d3d1"/>
+    <text x="500" y="358" font-weight="700">3 · Re-ranking</text>
+    <text x="500" y="378" fill="#57534e">jina v2 cross-encoder</text>
+    <text x="500" y="396" fill="#57534e">ONNX on a GTX 1650</text>
+    <text x="500" y="414" fill="#57534e">50 offers in 4.8 s</text>
+
+    <rect x="706" y="334" width="214" height="96" rx="10" fill="#fff" stroke="#d6d3d1"/>
+    <text x="722" y="358" font-weight="700">4 · Confidence threshold</text>
+    <text x="722" y="378" fill="#57534e">calibrated at 0.4</text>
+    <text x="722" y="396" fill="#57534e">says "nothing convincing"</text>
+    <text x="722" y="414" fill="#57534e">instead of a bad match</text>
+  </g>
+  <g stroke="#57534e" stroke-width="1.6">
+    <path d="M240 382 H258" marker-end="url(#arrow)"/>
+    <path d="M462 382 H480" marker-end="url(#arrow)"/>
+    <path d="M684 382 H702" marker-end="url(#arrow)"/>
+    <path d="M362 334 V256" marker-end="url(#arrow)" stroke-dasharray="4 4"/>
+  </g>
+
+  <!-- App -->
+  <rect x="580" y="96" width="340" height="130" rx="12" fill="#ecfdf5" stroke="#6ee7b7"/>
+  <text x="598" y="124" font-size="15" font-weight="700" fill="#064e3b">Local web app</text>
+  <text x="598" y="148" font-size="13" fill="#065f46">FastAPI · plain JavaScript · Leaflet map (IGN)</text>
+  <text x="598" y="168" font-size="13" fill="#065f46">CV vs offer: every quote verified</text>
+  <text x="598" y="188" font-size="13" fill="#065f46">draft to the recruiter, sent by me</text>
+  <text x="598" y="212" font-size="12" fill="#047857">8,600 companies that take apprentices</text>
+  <path d="M813 334 V230" stroke="#57534e" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <path d="M524 161 H576" stroke="#57534e" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <text x="40" y="500" font-size="13" fill="#57534e">Measured: nDCG@10, MRR, P@10, recall@50 on blind judgments · 154 tests · GitHub Actions CI</text>
+  <text x="40" y="524" font-size="13" fill="#57534e">No job-board scraping · no personal data collected · with a local LLM, nothing leaves the laptop</text>
+</svg>

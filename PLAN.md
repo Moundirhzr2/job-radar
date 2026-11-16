@@ -124,7 +124,7 @@ mesurée avant qu'on fasse confiance à une réponse.
 | 6 | RAG : réécriture, recherche hybride, re-ranking, évaluation | Fait : nDCG@10 0,49 → 0,73 (réécriture + re-ranking) sur 129 jugements, seuil de confiance 0,2 calibré |
 | 7 | Écart de compétences + mini-projets, fiche entreprise, brouillon de message | En partie : `radar fit` (acquis, à confirmer, manques, mini-projets) et `radar draft` (brouillon au contact publié, faits vérifiés) ; fiche entreprise à faire |
 | 8 | Application web avec la carte, suivi des candidatures | Fait : carte radar (cercles de distance, regroupement selon le zoom), liste au clavier, recherche, détail d'une offre (analyse, brouillon), suivi par prochaine action ; français et anglais, mode sombre, 0 violation axe-core |
-| 9 | Démo en ligne, mesures, ligne de CV | À faire |
+| 9 | Démo, mesures, ligne de CV | En partie : vidéo de démo et captures (`docs/`), nouvelle mesure sur 9 demandes dans toute la France (399 jugements : re-ranking 0,40 → 0,57 ; la réécriture par un petit modèle local fait baisser le score, donc désactivée par défaut ; seuil recalibré à 0,4), LLM local (Ollama) pour la génération, trace `radar explain` ; reste la ligne de CV et le passage du dépôt en public |
 
 Qualité des données repérée sur France Travail : des « alternances » sont publiées par des écoles
 qui recrutent des élèves pour leurs formations, pas par des employeurs. À signaler en croisant

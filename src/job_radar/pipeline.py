@@ -18,10 +18,12 @@ from .search import Candidate, Mode, SearchQuery, keywords_of, search
 
 # Below this re-ranking score for the best candidate, the radar says it found nothing
 # convincing instead of presenting weak matches as answers. Set on the evaluation set
-# (radar eval score): every request with relevant offers had a best offer scoring 0.23 or
-# more, and the request with nothing to find (a data apprenticeship within 30 km) never went
-# above 0.17. Offers below the threshold are still listed, apart.
-CONFIDENCE = 0.2
+# (radar eval score, 9 requests across France, November 2026): every request with relevant
+# offers had a best offer scoring 0.68 or more, no relevant offer scored below 0.51, and the
+# request with nothing to find (a data apprenticeship within 30 km of Mulhouse) never went
+# above 0.29. 0.4 leaves a margin on both sides. (October's set, around Mulhouse with Claude
+# rewriting, had put it at 0.2.) Offers below the threshold are still listed, apart.
+CONFIDENCE = 0.4
 
 
 @dataclass

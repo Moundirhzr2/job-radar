@@ -342,6 +342,1150 @@
   "by": "claude",
   "note": "pas un métier de la data (bases de données, data analyst, data engineer, BI)"
  },
+ "fr-bi__france_travail__214YWWX": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__215SYRQ": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__7398511": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__france_travail__7587141": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__7768859": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__7770997": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__7835577": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__7889131": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-bi__france_travail__7923224": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "analyse commerciale des ventes"
+ },
+ "fr-bi__france_travail__8097980": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__8100807": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__8520625": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__france_travail__8543999": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__france_travail__8544033": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-bi__la_bonne_alternance__69e00b370ef25c6caf245134": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__la_bonne_alternance__6a67ba3a8bbc3358a6794888": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-bi__la_bonne_alternance__6aa86fa79dceff7dd4b88a5b": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__la_bonne_alternance__6aa86fbd9dceff7dd4b88f37": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__la_bonne_alternance__6ac02a970d871689a663b203": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-bi__la_bonne_alternance__6ac02b090d871689a663cbb7": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__la_bonne_alternance__6ad14e4418139f73ced8aa2c": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__la_bonne_alternance__6ad93ae32b0b33f74bce64bd": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-bi__la_bonne_alternance__6ae27faaec4f5594ab3fbd11": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "intitulé « confirmé » pour une alternance"
+ },
+ "fr-bi__la_bonne_alternance__6aee5c1bcc766074572b6769": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "développeur data plus que BI"
+ },
+ "fr-bi__la_bonne_alternance__6aee5c1bcc766074572b676a": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__france_travail__215WWST": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__france_travail__6445515": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-cyber__france_travail__7386823": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__france_travail__7554240": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__france_travail__7664936": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__france_travail__7749623": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__france_travail__8365186": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__france_travail__8511067": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__france_travail__8514665": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__la_bonne_alternance__6a67ba3a8bbc3358a6794888": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__la_bonne_alternance__6adf217ebbefc38a6cec8e48": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__la_bonne_alternance__6ae28012ec4f5594ab3fd462": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__la_bonne_alternance__6ae28012ec4f5594ab3fd466": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__la_bonne_alternance__6ae28012ec4f5594ab3fd468": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__la_bonne_alternance__6ae28012ec4f5594ab3fd469": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__la_bonne_alternance__6ae28012ec4f5594ab3fd46b": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__la_bonne_alternance__6ae28012ec4f5594ab3fd46c": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-cyber__la_bonne_alternance__6ae91727cc766074572b442d": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-cyber__la_bonne_alternance__6aed0a74cc766074572b5f42": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__france_travail__214YWWX": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__6078799": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__france_travail__6930166": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "gouvernance des données plutôt qu'analyse"
+ },
+ "fr-data-analyst__france_travail__7165131": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__france_travail__7398511": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__france_travail__7587141": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__7735276": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__7768859": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__7769054": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__7835577": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__7923224": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "analyse commerciale des ventes"
+ },
+ "fr-data-analyst__france_travail__8100807": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__8161095": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__8161126": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__8207151": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__8250156": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__france_travail__8511143": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__8514653": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__france_travail__8543999": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-analyst__la_bonne_alternance__69e00b370ef25c6caf245134": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "excellence opérationnelle avec du Power BI : data en partie"
+ },
+ "fr-data-analyst__la_bonne_alternance__6aab12d39dceff7dd4b9f7b9": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__la_bonne_alternance__6ac02a970d871689a663b203": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-analyst__la_bonne_alternance__6ad14e4418139f73ced8aa2c": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__la_bonne_alternance__6ad93ae32b0b33f74bce64bd": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-analyst__la_bonne_alternance__6ae12e25ec4f5594ab3f2e59": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "données de formation RH : analyse, mais côté RH"
+ },
+ "fr-data-analyst__la_bonne_alternance__6ae27faaec4f5594ab3fbd11": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "intitulé « confirmé » pour une alternance"
+ },
+ "fr-data-analyst__la_bonne_alternance__6ae91ac6cc766074572b4b53": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-analyst__la_bonne_alternance__6aed0a8ccc766074572b5f46": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-analyst__la_bonne_alternance__6aed0b9ccc766074572b6015": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "underwriter : analyse d'un portefeuille d'assurance plus que data"
+ },
+ "fr-data-analyst__la_bonne_alternance__6aee5c1bcc766074572b6769": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-engineer__france_travail__214YWWX": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-engineer__france_travail__215MRWH": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "amélioration continue avec data et IA"
+ },
+ "fr-data-engineer__france_travail__6930166": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "gouvernance des données"
+ },
+ "fr-data-engineer__france_travail__7093035": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__france_travail__7165131": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-engineer__france_travail__7398511": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "analyse et reporting plus que pipelines"
+ },
+ "fr-data-engineer__france_travail__7770997": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-engineer__france_travail__7835577": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-engineer__france_travail__8250156": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__france_travail__8417993": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__france_travail__8511042": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-data-engineer__la_bonne_alternance__69e00b370ef25c6caf245134": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6a3c574baba467736d4e806c": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "gouvernance des données"
+ },
+ "fr-data-engineer__la_bonne_alternance__6a7658310f924fc95a1131d4": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-engineer__la_bonne_alternance__6a7f91f34bf3c06efe333e0b": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6aa86fe99dceff7dd4b89948": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-engineer__la_bonne_alternance__6aab12d39dceff7dd4b9f7b9": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "data science"
+ },
+ "fr-data-engineer__la_bonne_alternance__6abd880bd46e986892b9e15f": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ac02b090d871689a663cbb7": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ac41dee1778092e497ef0bf": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6acffb820bdf06aea298239f": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ad14ce7eb0b1e6ac91f775c": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "archivage et gestion numérique des données"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ada878cd61b4915a03d8543": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6adfdb77ec4f5594ab3e616f": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ae12e25ec4f5594ab3f2e59": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ae12e27ec4f5594ab3f2eb7": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ae27faaec4f5594ab3fbd11": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "intitulé « confirmé » pour une alternance"
+ },
+ "fr-data-engineer__la_bonne_alternance__6ae311e4149b034bd056d8c1": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "archivage et gestion numérique des données"
+ },
+ "fr-data-engineer__la_bonne_alternance__6aee5c1bcc766074572b6769": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-devops__careers-jsonld__8248868": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "MLOps, type de contrat incertain"
+ },
+ "fr-devops__careers-jsonld__8249166": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "admin cloud, type de contrat incertain"
+ },
+ "fr-devops__careers-jsonld__8380972": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__careers-jsonld__8393501": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__214XXXM": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-devops__france_travail__215KRPT": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__215SJXH": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__215SXLZ": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__6445525": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__7053507": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__7093023": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__7093024": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__7093035": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__7093047": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__7702331": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__7735280": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__7735328": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__7886089": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__7889131": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__france_travail__8009541": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8009562": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8064133": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8097979": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8163613": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8266846": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8510919": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8511042": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8511076": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8543999": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__france_travail__8544046": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__la_bonne_alternance__6abd880bd46e986892b9e15f": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__la_bonne_alternance__6ac41ded1778092e497ef0b1": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__la_bonne_alternance__6ac8128b9b5d06564c46358e": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__la_bonne_alternance__6aceaa1f50540abd1eebcf8c": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-devops__la_bonne_alternance__6acffb820bdf06aea298239b": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-devops__la_bonne_alternance__6ae28012ec4f5594ab3fd469": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__la_bonne_alternance__6ae28012ec4f5594ab3fd46a": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-devops__la_bonne_alternance__6aee5c1bcc766074572b6769": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__214TBKN": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "conseil en stratégie plus que technique"
+ },
+ "fr-ia__france_travail__214YWWX": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__215KRPT": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-ia__france_travail__215MRWH": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-ia__france_travail__215PMCD": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__216DBQL": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__7032607": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-ia__france_travail__7053507": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__7093023": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__7093024": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__7093035": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__7093038": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__7093047": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__7587141": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__7769073": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__8012442": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__8038530": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__8193682": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__8417993": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__france_travail__8511042": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__8511103": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__8514691": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__france_travail__8543999": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__la_bonne_alternance__6a1552b24bd3e45c550dba28": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__la_bonne_alternance__6ac6c2679b5d06564c45dd82": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__la_bonne_alternance__6ad2a35175ec98a5c11498a4": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__la_bonne_alternance__6ad2a35175ec98a5c11498a6": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__la_bonne_alternance__6adfdb771b7811ea8d92791c": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-ia__la_bonne_alternance__6ae12e25ec4f5594ab3f2e59": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "données RH avec un peu d'IA"
+ },
+ "fr-ia__la_bonne_alternance__6ae28012ec4f5594ab3fd463": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__la_bonne_alternance__6ae28012ec4f5594ab3fd46d": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-ia__la_bonne_alternance__6ae52296ec4f5594ab40d140": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-ia__la_bonne_alternance__6ae9929cd94d2b5dcef653a6": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-ia__la_bonne_alternance__6aede4bf8c2c54da513bf1ee": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__france_travail__214XXXM": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "cloud / IA / DevOps, Python probable"
+ },
+ "fr-python__france_travail__214YWWX": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__215MRWH": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "ingénieur data & IA, pas développeur"
+ },
+ "fr-python__france_travail__6930144": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__6934375": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__6944235": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__6944522": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__7627183": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__france_travail__7835313": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-python__france_travail__7835533": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-python__france_travail__7962883": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__france_travail__8163613": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8193682": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8193701": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8207641": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8266846": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8511081": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8511103": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8511176": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8511191": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8514554": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8514564": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8514613": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8514653": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8514721": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__france_travail__8544046": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-python__la_bonne_alternance__6a46e31d4c5503cbfc375919": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-python__la_bonne_alternance__6a67ba3a8bbc3358a6794888": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__la_bonne_alternance__6aab12d39dceff7dd4b9f7b9": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-python__la_bonne_alternance__6abc1844999d7ac15746848a": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__la_bonne_alternance__6ac96573e2ab790b62ec9a3e": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-python__la_bonne_alternance__6aceaa01bd527d1b3c359d83": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__la_bonne_alternance__6acfb3f922ce23a2ad444f71": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-python__la_bonne_alternance__6acffb820bdf06aea298239b": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "développeur logiciel, rien de plus"
+ },
+ "fr-python__la_bonne_alternance__6acffcd00bdf06aea2986f29": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-python__la_bonne_alternance__6ad69309e0503c9d67332b16": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__la_bonne_alternance__6ae12d0bec4f5594ab3eedd9": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__la_bonne_alternance__6ae52296ec4f5594ab40d140": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "mission IA, pas développement"
+ },
+ "fr-python__la_bonne_alternance__6aed0a8ccc766074572b5f46": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-python__la_bonne_alternance__6aed0b9ccc766074572b6040": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "développeur, langage non précisé"
+ },
+ "fr-python__la_bonne_alternance__6aee5c1bcc766074572b6769": {
+  "label": "unsure",
+  "by": "claude",
+  "note": "développeur data, langage non précisé"
+ },
+ "fr-web__careers-jsonld__8483984": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "fr-web__france_travail__6944004": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__6944299": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__7702301": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__7790583": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__7793243": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__7835313": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__france_travail__7835533": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__france_travail__7962883": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__france_travail__8016017": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__france_travail__8161178": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__8163613": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__8207641": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__8250078": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__8511191": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__8514564": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__france_travail__8546995": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "fr-web__la_bonne_alternance__6a064773687b65f199a02f5f": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__la_bonne_alternance__6ac96573e2ab790b62ec9a3e": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__la_bonne_alternance__6acfb3f922ce23a2ad444f71": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__la_bonne_alternance__6ad7791e04d39aae9b87130c": {
+  "label": "yes",
+  "by": "claude"
+ },
+ "fr-web__la_bonne_alternance__6aee5c1bcc766074572b6769": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
  "it__france_travail__213PGRR": {
   "label": "no",
   "by": "moundir"
@@ -435,6 +1579,166 @@
  "it__france_travail__7668714": {
   "label": "no",
   "by": "moundir"
+ },
+ "mulhouse-data__france_travail__211LWJS": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__215MSXW": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__7740465": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__7975450": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__7975793": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__7975975": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__7977526": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__7979563": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__7979901": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__7980908": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__8106054": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__8250145": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__8256338": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__france_travail__8510914": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__8510930": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__8510984": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__8544052": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__france_travail__8624120": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__la_bonne_alternance__6a7f925c4bf3c06efe3356df": {
+  "label": "no",
+  "by": "claude",
+  "note": "offre d'une école pour sa propre formation : il faudrait s'y inscrire"
+ },
+ "mulhouse-data__la_bonne_alternance__6acfaa5eeb1fb948b46abcf3": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6acfb02922ce23a2ad444bc2": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6acfb90822ce23a2ad445397": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6ad5c88f2c77d038809dee38": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6ad5c8915334fda8505e7ace": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6adbd97e2acc1f90146619b0": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6adbd97e2acc1f90146619b1": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6adc5ecb149b034bd053a940": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6adc5f73149b034bd053a981": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6addbefcbbefc38a6cec1b86": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6adfdc90ec4f5594ab3ea27d": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6ae99c45d94d2b5dcef65c61": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
+ },
+ "mulhouse-data__la_bonne_alternance__6ae99cc2d94d2b5dcef65cd2": {
+  "label": "no",
+  "by": "claude",
+  "note": "pas le métier demandé"
  },
  "weekend__france_travail__209VLWX": {
   "label": "no",

@@ -1,258 +1,90 @@
+<div align="center">
+
 # Job Radar
 
-**Moins de candidatures, envoyées aux bonnes personnes.**
+**A measured RAG that finds apprenticeships across France, and the companies that hire without posting.**
 
-Job Radar montre aux étudiants ce qui recrute autour d'eux (stages, alternances, emplois, jobs
-étudiants), y compris les entreprises qui n'ont rien publié, et le chemin le plus direct vers la
-personne qui décide. Uniquement à partir de sources officielles et de données que les
-entreprises publient elles-mêmes.
+Personal project · Moundir Houazar · M1 Computer Science and Mobility, Université de Haute-Alsace
 
-## Pourquoi ce projet
+![A search in plain French, in real time: first results in 1.4 s, the order refined by a cross-encoder on the GPU at 6.6 s, an offer, then the companies that take apprentices without posting](docs/demo.gif)
 
-Je suis étudiant en Master 1 Informatique et Mobilité à l'Université de Haute-Alsace, et je
-cherche une alternance. Comme beaucoup d'étudiants, je me suis souvent retrouvé bloqué au moment
-de postuler : des candidatures envoyées sur de grands sites d'emploi, sans savoir qui les lirait,
-et le plus souvent sans réponse.
+**26,000 offers** refreshed every night · **local LLM**, no API key · **re-ranking on the GPU** · **measured on 399 blind judgments**
 
-Ce projet représente ma situation actuelle. J'ai pris le temps d'y réfléchir et je me suis dit :
-pourquoi ne pas construire l'outil qui m'aiderait, moi, dans la vraie vie ? Un outil qui me
-montre ce qui recrute autour de moi, y compris les entreprises qui ne publient pas d'offres, et
-qui m'indique à qui m'adresser pour arriver jusqu'à la personne qui recrute.
+The same demo as a video: `docs/demo.mp4`.
 
-Je l'utilise pour ma propre recherche. S'il m'aide, il pourra aider d'autres étudiants dans la
-même situation.
+</div>
 
-## Ce que fait le radar
+## Why
 
-- **Les entreprises autour de soi** : tous les employeurs qui ont un établissement dans le rayon
-  choisi, depuis l'annuaire officiel des entreprises, avec leur activité et leur taille.
-- **Les entreprises qui recrutent sans publier d'offre** : classées par potentiel d'embauche
-  pour un métier (France Travail – La Bonne Boîte), avec l'indication des entreprises qui
-  acceptent les candidatures spontanées.
-- **Les offres France Travail** autour d'une commune, relues régulièrement : les offres retirées
-  quittent le radar.
-- **Les offres publiées sur les sites carrières des entreprises** : données structurées
-  `JobPosting` des pages d'offres, flux publics des logiciels de recrutement (Greenhouse, Lever,
-  Recruitee) et sitemaps publiés pour les moteurs de recherche.
-- **Les jobs étudiants, selon les heures** : 26 h par semaine au plus. Quand l'offre donne une
-  fourchette (« de 24 à 30 heures par semaine ») ou des heures négociables, la valeur la plus
-  basse compte. La mention « temps partiel » ne suffit pas : France Travail l'applique à un
-  contrat de 34 h 12.
-- **La recherche en langage naturel** (« alternance data analyst près de Mulhouse ») : un RAG
-  mesuré, décrit plus bas.
-- **Mon profil face à une offre** : ce que j'ai déjà, ce qui est à confirmer, ce qui me manque et
-  un mini-projet pour l'apprendre ; puis un brouillon de message à la personne qui recrute.
-- **Une interface web**, en français et en anglais : la carte du radar, la liste, la recherche,
-  le détail d'une offre et le suivi de mes candidatures.
+I am looking for an apprenticeship in data and AI. Sending applications on big job boards rarely gets an answer, and in October 2026 France Travail listed no data apprenticeship at all within 100 km of Mulhouse. So I built the tool I needed: it reads official sources only, searches them in plain language, tells me how well my CV fits an offer, and shows the companies that take apprentices without publishing anything.
+
+## How the search works
+
+![Architecture: official sources, PostgreSQL with pgvector and PostGIS, a four-step search, a local web app](docs/architecture.svg)
+
+A request goes through four steps, each of which can be switched off to measure what it brings:
+
+1. **Query rewriting, optional.** A language model turns "alternance data analyst" into a sentence describing the ideal offer, exact keywords in French and English, and the contract types, in a structure validated by Pydantic. A rule-based guard keeps the contract types written in the request: a small model once turned "alternance" into an internship search. With Claude it helped; with a local 2-4B model it hurt (see below), so it is off by default.
+2. **Hybrid retrieval.** One SQL query keeps the offers within the radius (PostGIS), ranks them by meaning (multilingual-e5-large vectors in pgvector) and by words (French full-text search), and fuses both rankings with Reciprocal Rank Fusion. 0.6 s over 26,000 offers.
+3. **Re-ranking.** A multilingual cross-encoder (jina-reranker-v2) rereads each request and offer pair and reorders the top 50. It runs with ONNX Runtime on a GTX 1650: 50 offers in 4.8 s instead of 90 s on the CPU, with the same scores. The page shows the hybrid results first, then the refined order.
+4. **Confidence threshold.** When the best offer scores below 0.4, the radar says it found nothing convincing instead of presenting a weak match as an answer.
+
+Then comes the generation, the G of the RAG: on an offer it retrieved, a local model (qwen3.5:4b through Ollama, or Claude) compares the offer with my CV, lists what I have, what is left to prove and what is missing, and drafts a short message to the recruiter. Every quote it makes is looked up word for word in the offer and in the CV: a skill whose proof cannot be found in the CV is never shown as acquired, and a requirement the offer does not contain is flagged. On the trace kept in `docs/rag-trace.md`, 9 of the 12 quotes of the local model were found in the offer; the 3 others were flagged.
+
+`radar explain "alternance data analyst"` prints what each step produced on a real search; one such trace is kept in `docs/rag-trace.md`.
+
+## Measured before trusted
+
+![nDCG@10 by configuration: hybrid + re-ranking scores 0.57, the best](docs/results.svg)
+
+Nine requests across France (data analyst, data engineer, AI, Python, web, cybersecurity, DevOps, BI, and data near Mulhouse, where nothing relevant exists). The top 10 of every configuration were pooled and judged blind, without knowing which method found which offer: 270 offers, judged by an LLM following my written rules, next to the 129 offers I judged myself in October. Each judgment and its reason are kept in `eval/labels.json`. An offer posted by a school for its own programme counts as not relevant: to take it, I would have to enroll there.
+
+| Configuration | nDCG@10 | MRR@10 | P@10 | Recall@50 |
+|---|---:|---:|---:|---:|
+| keywords only | 0.29 | 0.41 | 0.28 | 0.39 |
+| vectors only | 0.42 | 0.53 | 0.28 | 0.81 |
+| hybrid | 0.40 | 0.48 | 0.26 | 0.98 |
+| **hybrid + re-ranking (default)** | **0.57** | 0.65 | **0.39** | **0.98** |
+| qwen3.5:2b rewrite + hybrid + re-ranking | 0.52 | **0.74** | 0.31 | 0.76 |
+| qwen3.5:4b rewrite + hybrid + re-ranking | 0.51 | 0.71 | 0.31 | 0.67 |
+
+What it says:
+
+- **Re-ranking brings the most:** 0.40 → 0.57 on the hybrid search, without losing any recall.
+- **A small local model's rewriting hurts:** it lifts the first relevant offer (MRR 0.74) but drops a quarter to a third of the relevant offers from the top 50. With Claude, on October's set around Mulhouse, rewriting had lifted nDCG@10 from 0.49 to 0.64. Measured, so off by default.
+- **The threshold comes from the same judgments:** every request with relevant offers had a best score of 0.68 or more, the request with nothing to find never went above 0.29, and no relevant offer scored below 0.51. 0.4 sits between.
+- **Limits:** nine requests are a small set, and many apprenticeships are posted by schools; the re-ranker cannot tell them apart and still ranks some of them high.
+
+## What it does
+
+- **The map of what is hiring:** apprenticeships from France Travail and La bonne alternance (Hellowork, APEC, Meteojob…) across France, with or without a radius.
+- **The hidden market:** 8,600 companies that take apprentices in computing without an offer, each with a link to apply.
+- **My CV against an offer:** covered, to confirm, missing, and a weekend project for each important gap.
+- **A draft to the recruiter,** written in the offer's language; I read it, edit it and send it myself.
+- **The same search on LinkedIn, Welcome to the Jungle, HelloWork and Indeed,** as prefilled links opened in my browser: the radar never reads those sites.
+- **An application tracker,** sorted by next action.
+
+![The companies that take apprentices without an offer, closest first, with a link to apply](docs/employers.png)
+
+## Run it
 
 ```bash
-docker compose up -d --wait        # PostgreSQL 17 + PostGIS + pgvector
+docker compose up -d --wait          # PostgreSQL 17 + PostGIS + pgvector
 uv sync
+ollama pull qwen3.5:4b               # the local language model (or set a Claude key)
+$env:RADAR_LLM = "ollama:qwen3.5:4b"
 
-uv run radar companies --town Mulhouse --radius 15 --sections J --naf 62,63  # employeurs du numérique
-uv run radar hiring --town Mulhouse --radius 30 --field data      # qui recrute, même sans offre
-uv run radar francetravail --town Mulhouse --radius 30 --kind apprenticeship student_job
-uv run radar francetravail --france --kind apprenticeship        # toute la France, par département
-uv run radar francetravail --refresh                             # relit les offres connues
-uv run radar lba                                                 # alternances La bonne alternance
-uv run radar careers https://groupeoci.teamtailor.com/jobs       # offres d'un site carrières
-uv run radar index                                               # vecteurs des offres nouvelles
-uv run radar search "alternance data analyst" --town Mulhouse    # la recherche RAG
-uv run radar fit 629                                             # mon profil face à l'offre n°629
-uv run radar draft 629                                           # brouillon au recruteur
-uv run radar web                                                 # tout cela dans le navigateur
+uv run radar lba                     # La bonne alternance: offers and recruiting companies
+uv run radar francetravail --france --kind apprenticeship
+uv run radar index                   # vectors of the new offers, on the GPU when there is one
+uv run radar web                     # http://127.0.0.1:8000
 ```
 
-Essais sur données réelles autour de Mulhouse : 3 681 offres lues (France Travail et sites
-carrières), dont 3 126 encore en ligne (555 retirées par les employeurs en quelques jours),
-353 alternances à moins de 100 km et 258 jobs étudiants ; 172 employeurs du numérique à moins
-de 15 km, dont 6 que La Bonne Boîte signale comme susceptibles de recruter.
+`scripts\install-refresh-task.ps1` refreshes everything every night at 4:00. Other commands: `radar search`, `radar explain`, `radar fit`, `radar draft`, `radar eval pool | page | import | score`.
 
-Le rayon est facultatif : sans rayon, le radar couvre toute la France. Avec les alternances
-France Travail des 101 départements (13 octobre 2026), la base compte 18 559 offres en ligne, et
-« alternance data » trouve 20 alternances data, la meilleure à 0,80 de confiance, là où il n'y en
-avait aucune à moins de 30 km de Mulhouse.
+## Rules
 
-La bonne alternance (API Apprentissage, export quotidien, clé gratuite dans `LBA_API_TOKEN`)
-ajoute 9 634 alternances publiées par ses partenaires (Hellowork, Direct Emploi, Meteojob,
-APEC…), sans reprendre celles de France Travail : 28 209 offres en ligne au 17 octobre 2026.
-Sur « alternance data », 9 des 20 premiers résultats en viennent. Les offres gérées par une
-école sont signalées (« géré par une école »).
-
-Le même export donne les entreprises qui prennent des alternants **sans offre publiée** :
-282 023 en France, dont 8 686 en informatique et data (codes ROME M1403, M1801, M1802,
-M1805, M1806, M1810), gardées pour la couche « Employeurs » avec un bouton « Candidater » vers
-leur page La bonne alternance. Données d'entreprise seulement : ni nom de personne, ni e-mail.
-
-Ce que ces données montrent (début octobre 2026) : à moins de 100 km de Mulhouse, France Travail
-ne publie aucune alternance data, et ses 5 alternances en informatique sont toutes déposées par
-des écoles. Un
-étudiant qui ne cherche que là ne trouve presque rien : c'est pour cela que le radar lit aussi
-les sites carrières et repère les entreprises qui recrutent sans publier d'offre.
-
-## La recherche : un RAG qui se mesure
-
-Une demande passe par quatre étapes, chacune pouvant être désactivée pour mesurer ce qu'elle
-apporte :
-
-1. **Réécriture** : Claude (Opus 5.5, sortie structurée validée par Pydantic) transforme la
-   demande et mon profil en une phrase qui décrit l'offre idéale, des mots-clés exacts en
-   français et en anglais, et les types de contrat.
-2. **Recherche hybride dans le rayon** : PostGIS garde les offres à moins de X km ; elles sont
-   classées par le sens (vecteurs `multilingual-e5-large`, calculés en local) et par les mots
-   (plein texte français, sans accents), puis les deux classements sont fusionnés (RRF).
-3. **Re-ranking** : un cross-encoder multilingue (`jina-reranker-v2`, en local) relit chaque
-   paire demande / offre et réordonne les 50 premières.
-4. **Seuil de confiance** : si la meilleure offre a un score inférieur à 0,2, le radar dit qu'il
-   n'a rien trouvé de convaincant au lieu de présenter des offres faibles comme des réponses.
-
-**Temps de réponse** (portable, GTX 1650 de 4 Go) : le re-ranking passe sur la carte graphique,
-50 offres relues en 6,5 s au lieu de 90 s sur le processeur, avec les mêmes scores. La page
-montre d'abord les résultats de la recherche hybride (4,6 s), puis l'ordre affiné (10,9 s au
-total). Les deux modèles ne tiennent pas ensemble dans 4 Go : la recherche met son re-ranker sur
-la carte, l'indexation son modèle de vecteurs (7 fois plus rapide). Sans carte NVIDIA, tout
-tourne sur le processeur ; `RADAR_DEVICE=cpu` l'impose.
-
-### Mesurer avant de faire confiance
-
-- **5 demandes réelles**, les miennes : alternance data (30 km), alternance en informatique
-  (100 km), emploi data (30 km), poste en informatique (30 km), job étudiant le week-end (15 km).
-- **Mise en commun** (pooling) : les 10 premières offres de chacune des 6 configurations forment
-  les offres à juger, 129 offres jugées au total.
-- **Jugement en aveugle** sur une page dédiée : les offres sont mélangées, sans savoir quelle
-  méthode les a trouvées. J'en ai jugé 72 moi-même. Claude en a jugé 57
-  avec mes règles écrites (« data » = bases de données, data analyst, data engineer, BI, big
-  data ; job étudiant = 26 h par semaine au plus) : les offres que seule une nouvelle
-  configuration avait trouvées, et 5 « pertinente » clairement hors sujet qu'il a corrigés.
-  Chacun de ses avis porte sa raison, visible sur la page, et je garde le dernier mot ;
-  `eval/labels.json` garde qui a jugé quoi. Les offres retirées depuis ne comptent plus : aucune
-  méthode ne peut les trouver.
-- **Mesures** : nDCG@10 (les offres pertinentes sont-elles en haut ?), MRR@10 (à quel rang
-  arrive la première ?), P@10 (part d'offres pertinentes dans les 10 premières), rappel@50.
-
-| Configuration | nDCG@10 | MRR@10 | P@10 | Rappel@50 |
-|---|---:|---:|---:|---:|
-| mots-clés seuls | 0,00 | 0,00 | 0,00 | 0,00 |
-| vecteurs seuls | 0,56 | 0,45 | 0,30 | 0,99 |
-| hybride | 0,49 | 0,42 | 0,28 | 0,99 |
-| hybride + re-ranking | 0,51 | 0,46 | 0,23 | 0,99 |
-| réécriture + hybride | 0,64 | 0,57 | 0,30 | 0,96 |
-| **réécriture + hybride + re-ranking** | **0,73** | **0,69** | 0,28 | 0,96 |
-
-Moyennes sur les 4 demandes qui ont des offres pertinentes ; mesure du 8 octobre 2026.
-
-Ce que le tableau montre :
-
-- **La réécriture apporte le plus** (hybride : 0,49 → 0,64), et **le re-ranking ne paie qu'après
-  elle** : seul, il ne change presque rien (0,51) ; sur la demande réécrite, il monte à
-  **0,73**, et la première offre pertinente arrive le plus souvent en tête (MRR 0,69).
-- **Le problème est le rang, pas la présence** : avec les vecteurs, la bonne offre est presque
-  toujours dans les 50 premières (rappel@50 ≥ 0,96). C'est l'ordre qu'il faut corriger, et
-  c'est le rôle du re-ranking.
-- **Les mots-clés seuls ne trouvent rien** : sans réécriture, la demande entière sert de
-  requête, et aucune offre ne contient tous ses mots. Les mots exacts ne servent que s'ils sont
-  bien choisis, ce que fait la réécriture.
-- **La réécriture a ses pièges, et la mesure les montre** : « réseaux » a fait remonter un poste
-  de manœuvre sur un chantier de réseaux secs, et le filtre « alternance », faute d'alternance
-  data, des alternances d'échafaudeur ou de commis de bar.
-- **P@10 reste bas (0,28) parce que le marché est maigre** : sur les 4 demandes, trois n'ont
-  qu'une seule offre pertinente en ligne autour de Mulhouse (alternance en informatique, emploi
-  data, poste en informatique). La recherche ne peut pas trouver ce qui n'est pas publié : d'où
-  les entreprises qui recrutent sans offre.
-
-**Le seuil de confiance vient des mêmes jugements** (`radar eval score` le recalcule) : pour
-chaque demande qui a des offres pertinentes, la meilleure offre obtient au moins 0,23 ; pour
-l'alternance data à 30 km, où rien ne correspond, jamais plus de 0,17. Au seuil de 0,2, le radar
-répond aux quatre premières et dit honnêtement qu'il n'a rien de convaincant pour la cinquième
-(un seuil de 0,5 aurait caché presque toutes les bonnes offres). Une offre pertinente peut
-tomber sous le seuil, plus bas dans la liste : elle reste affichée, à part, parmi les « moins
-convaincantes ».
-
-**Limites** : 5 demandes et 20 offres pertinentes, c'est un petit jeu d'évaluation, qui mesure
-une photo de la base du 8 octobre 2026. Il sert à comparer les configurations entre elles, pas à
-promettre un score.
-
-## Mon profil face à une offre
-
-`radar fit 629` compare l'offre à mon profil (`data/profile.md`, mon CV en texte, jamais publié
-dans le dépôt) et range chaque exigence de l'offre :
-
-- **ce que j'ai déjà**, avec la phrase de mon profil qui le prouve ;
-- **à confirmer** : une expérience proche ; l'outil propose une ligne de CV à ajouter
-  *seulement si c'est vrai* ;
-- **ce qui me manque**, avec pour les plus importants un mini-projet d'un week-end, sur des
-  données publiques, qui laisse quelque chose à montrer (dépôt GitHub, notebook, tableau de
-  bord).
-
-`radar draft 629` écrit ensuite un court message pour la personne dont le contact est publié dans
-l'offre. Je le relis et je l'envoie moi-même : rien n'est envoyé automatiquement.
-
-Rien n'est pris sur parole : chaque citation (de l'offre comme de mon profil) est recherchée mot
-pour mot. Une compétence « acquise » dont la citation est introuvable dans mon profil redevient
-« à confirmer », et un fait du message qui n'est pas dans mon profil est signalé avant l'envoi.
-
-## L'interface web
-
-`uv run radar web` ouvre le radar dans le navigateur, sur http://127.0.0.1:8000. L'adresse est
-locale par défaut : le suivi des candidatures contient mes données.
-
-![Recherche « alternance data » autour de Mulhouse : les résultats sont numérotés dans la liste et sur la carte](docs/web-search-fr.jpg)
-
-- **La carte** : le rayon dessiné comme un radar (cercles de distance, l'extérieur grisé), les
-  offres regroupées selon le zoom, les entreprises qui embauchent souvent, et les résultats d'une
-  recherche numérotés comme dans la liste. Fond Plan IGN (Géoplateforme, sans clé).
-- **La liste, au clavier** : tout ce que montre la carte est aussi dans la liste, filtrable par
-  commune et par type de contrat ; chaque offre a son adresse, qu'on peut ouvrir dans un nouvel
-  onglet.
-- **Le détail d'une offre** : le lien vers la source pour postuler, l'analyse de mon profil et le
-  brouillon de message, avec les mêmes vérifications que la ligne de commande.
-- **La même recherche ailleurs** : sous chaque recherche, des liens vers LinkedIn, Welcome to
-  the Jungle, HelloWork et Indeed, avec les mots, la commune, le rayon et les contrats déjà
-  remplis. Ils s'ouvrent dans mon navigateur : le radar ne lit pas ces sites.
-- **Le suivi des candidatures**, rangé par prochaine action : à relancer, à envoyer, en attente,
-  entretiens. Une candidature envoyée planifie sa relance une semaine plus tard, une relance
-  planifie la suivante, et une suppression peut s'annuler pendant quelques secondes.
-- **En français et en anglais** : le choix est gardé dans l'adresse et dans le navigateur.
-  L'analyse de profil est alors écrite par Claude dans cette langue ; le message au recruteur
-  reste dans la langue de l'offre.
-
-![Une offre en anglais et en mode sombre : lien vers France Travail, ajout au suivi, texte de l'offre tel que publié](docs/web-offer-en-dark.jpg)
-
-L'état de la page est dans l'adresse (commune, rayon, contrats, recherche, offre ouverte, langue) :
-une vue se garde en favori. Toute la page s'utilise au clavier, suit le mode sombre et réduit les
-animations quand le système le demande ; un audit axe-core ne relève aucune violation, en
-français comme en anglais, sur ordinateur et sur téléphone (Chromium). Polices, icônes et
-bibliothèque de carte sont servies par l'application elle-même, sous licences libres (Atkinson
-Hyperlegible Next, Phosphor, Leaflet) : seul le fond de carte vient de l'IGN.
-
-## Les règles
-
-Le projet ne fait que ce qui est légal et respectueux des sites et des personnes :
-
-1. Uniquement des API officielles et des données publiées par les entreprises pour être lues
-   par des machines.
-2. Aucun scraping de sites d'emploi ni de LinkedIn, aucune collecte d'adresses e-mail
-   personnelles.
-3. Chaque site est lu selon ses règles : `robots.txt` respecté (SmartRecruiters est exclu pour
-   cette raison), délai entre deux requêtes, et un site qui refuse l'usage de son contenu par une
-   IA (`Content-Signal: ai-input=no`) n'est jamais envoyé à un modèle.
-4. Données personnelles réduites au minimum : pour les petites entreprises, le nom et la fonction
-   du dirigeant (registre public), jamais sa date de naissance.
-5. Jamais d'invention sur un CV, pas de candidature automatique : l'outil mène à la bonne page
-   et prépare, l'étudiant envoie.
-
-Le détail du produit, des sources, de la partie RAG et de la feuille de route est dans
-[PLAN.md](PLAN.md).
-
-## Mise à jour chaque nuit
-
-`scripts\refresh.ps1` relit La bonne alternance et France Travail, retire les offres qui ne sont
-plus en ligne et indexe les nouvelles ; le journal est dans `data\refresh.log`. Pour le lancer
-chaque nuit à 4 h (ou au démarrage suivant si le PC était éteint) :
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install-refresh-task.ps1
-```
+Official APIs and data published by the companies only. No scraping of job boards or LinkedIn, no collection of personal email addresses, `robots.txt` respected. Nothing is invented on a CV and nothing is sent automatically: the tool prepares, I apply. The CV stays in `data/`, outside the repository.
 
 ## Tests
 
@@ -260,8 +92,19 @@ powershell -ExecutionPolicy Bypass -File scripts\install-refresh-task.ps1
 docker compose up -d --wait && uv run pytest
 ```
 
-133 tests : lecture des pages et des flux, règles robots.txt, heures de travail sur des
-formulations d'offres réelles, géolocalisation, reprise sur erreur réseau, appels à Claude face à
-un faux serveur (sans clé ni réseau), l'API web et le suivi des candidatures, et tests
-d'intégration sur un vrai PostgreSQL + PostGIS + pgvector. La CI GitHub Actions les exécute à
-chaque push.
+154 tests: the sources and their failures, the hours rules for student jobs, the hybrid SQL search on a real PostgreSQL, the re-ranking, the local LLM against a fake Ollama server, the quote checks, the web API and the evaluation. GitHub Actions runs them on every push.
+
+## Files
+
+| Path | What it holds |
+|---|---|
+| `src/job_radar/sources/` | France Travail, La bonne alternance, La Bonne Boîte, company directory, career sites |
+| `src/job_radar/search.py` | the hybrid SQL query (pgvector, full text, PostGIS, RRF) |
+| `src/job_radar/rewrite.py`, `llm.py` | query rewriting, local or Claude, with the contract guard |
+| `src/job_radar/rerank.py`, `embed.py` | the local models and where they run (GPU or CPU) |
+| `src/job_radar/pipeline.py`, `explain.py` | the four steps, and the step-by-step trace |
+| `src/job_radar/fit.py`, `draft.py` | CV against an offer, draft to the recruiter, quote checks |
+| `src/job_radar/evaluate.py`, `judge_page.*` | pooling, blind judging page, nDCG / MRR / P@10 / recall |
+| `src/job_radar/web/` | FastAPI and the page (Leaflet map, French and English) |
+| `eval/` | the requests and the judgments, with who judged and why |
+| `PLAN.md` | product, sources, decisions and roadmap (in French) |

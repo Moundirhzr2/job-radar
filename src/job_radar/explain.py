@@ -20,6 +20,7 @@ from .fit import offer_text
 from .models import Kind
 from .pipeline import CONFIDENCE
 from .rerank import rerank
+from .rewrite import RewrittenQuery
 from .search import SearchQuery, search
 
 STATUS = {"covered": "acquis", "to_confirm": "à confirmer", "missing": "manque"}
@@ -32,7 +33,7 @@ def explain(
     radius_km: float,
     embedder,
     reranker,
-    rewriter: Callable,
+    rewriter: Callable | None,
     profile: str,
     analyse: Callable | None,
     model: str,
@@ -42,11 +43,15 @@ def explain(
     clock = time.perf_counter
 
     t = clock()
-    rw = rewriter(request, profile)
+    if rewriter:
+        rw = rewriter(request, profile)
+        out += [f"## 1. Réécriture par le modèle de langage ({model}) — {clock() - t:.1f} s", ""]
+    else:  # the default: measured, a small local model's rewriting lowered nDCG@10
+        rw = RewrittenQuery(semantic_query=request, keywords=[request], kinds=[], town=None,
+                            radius_km=None)  # fmt: skip
+        out += ["## 1. Réécriture — désactivée (par défaut : voir la mesure)", ""]
     out += [
-        f"## 1. Réécriture par le modèle de langage ({model}) — {clock() - t:.1f} s",
-        "",
-        f"- Offre idéale (encodée en vecteur) : « {rw.semantic_query} »",
+        f"- Texte encodé en vecteur : « {rw.semantic_query} »",
         f"- Mots-clés (recherche plein texte) : {', '.join(rw.keywords)}",
         f"- Contrats : {', '.join(rw.kinds) or 'tous'}",
         "",

@@ -59,7 +59,7 @@ const state = {
   tab: "offers", // "offers" | "employers"
   place: "", // a town of the list, lower case
   q: "",
-  rewrite: true,
+  rewrite: false, // opt-in: with a small local model it lowered nDCG@10 (eval/)
   offer: null, // id of the offer open in the panel
   app: null, // application to bring into view in the tracker
 };
@@ -93,7 +93,7 @@ function readUrl() {
   state.tab = params.get("tab") === "employers" ? "employers" : "offers";
   state.place = (params.get("place") || "").toLocaleLowerCase("fr-FR");
   state.q = (params.get("q") || "").trim().slice(0, 300);
-  state.rewrite = params.get("rw") !== "0";
+  state.rewrite = params.get("rw") === "1";
   state.offer = positive(params.get("offer"));
   state.app = positive(params.get("app"));
 }
@@ -117,7 +117,7 @@ function query(overrides = {}, { withLang = true } = {}) {
   if (s.tab !== "offers") params.set("tab", s.tab);
   if (s.place) params.set("place", s.place);
   if (s.q) params.set("q", s.q);
-  if (!s.rewrite) params.set("rw", "0");
+  if (s.rewrite) params.set("rw", "1");
   if (s.offer) params.set("offer", String(s.offer));
   if (s.app) params.set("app", String(s.app));
   if (withLang && s.lang !== defaultLang()) params.set("lang", s.lang);
@@ -132,7 +132,7 @@ function hrefFor(overrides) {
 function commit(push = false) {
   const url = new URL(hrefFor({}), location.href);
   if (url.href !== location.href) history[push ? "pushState" : "replaceState"](null, "", url);
-  const home = { view: "radar", q: "", offer: null, place: "", app: null, rewrite: true };
+  const home = { view: "radar", q: "", offer: null, place: "", app: null, rewrite: false };
   local.set("last", query(home, { withLang: false }).toString());
 }
 
